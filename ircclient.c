@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <lua.h>
 #include <lauxlib.h>
@@ -9,6 +8,99 @@
 #else
 #define REGISTER(L, r) luaL_register(L, NULL, r)
 #endif
+
+/* LIBRARY FUNCTIONS */
+// TODO: irc_option_set, irc_option_reset
+
+static int l_get_version(lua_State * L) {
+    unsigned int high, low;
+    irc_get_version(&high, &low);
+    lua_pushinteger(L, high);
+    lua_pushinteger(L, low);
+    return 2;
+}
+
+static int l_target_get_nick(lua_State *L) {
+    const char *origin = luaL_checkstring(L, 1);
+    char buffer[128];
+    size_t size = 128;
+    irc_target_get_nick(origin, buffer, size);
+    lua_pushstring(L, buffer);
+    return 1;
+}
+
+static int l_target_get_host(lua_State *L) {
+    const char *origin = luaL_checkstring(L, 1);
+    char buffer[128];
+    size_t size = 128;
+    irc_target_get_host(origin, buffer, size);
+    lua_pushstring(L, buffer);
+    return 1;
+}
+
+static int l_color_strip_from_mirc(lua_State * L) {
+    const char * message = luaL_checkstring(L, 1);
+    char * out = irc_color_strip_from_mirc(message);
+    lua_pushstring(L, out);
+    free(out);
+    return 1;
+}
+
+static int l_color_convert_from_mirc(lua_State * L) {
+    const char * message = luaL_checkstring(L, 1);
+    char * out = irc_color_convert_from_mirc(message);
+    lua_pushstring(L, out);
+    free(out);
+    return 1;
+}
+
+/* CALLBACK WRAPPERS */
+// FIXME DRY
+
+void callback_generic(irc_session_t * session, const char * event, const char * origin, const char ** params, unsigned int count) {
+    struct callback * cb = irc_get_ctx(session);
+    if (cb == 0)
+        return;
+    lua_rawgeti(cb->L, LUA_REGISTRYINDEX, cb->ref);
+    // lua_rawgetp(L, -2, (void *)cb);
+    lua_pushlightuserdata(cb->L, (void *)cb);
+    lua_gettable(cb->L, -2);
+    luaL_getmetafield(cb->L, -1, "__callbacks");
+    lua_getfield(cb->L, -1, event);
+    if (lua_isnil(cb->L, -1))
+        goto cleanup;
+    lua_pushstring(cb->L, origin);
+    for (int i = 0; i < count; i++) {
+        lua_pushstring(cb->L, params[i]);
+    }
+    lua_pcall(cb->L, count+1, LUA_MULTRET, 0);
+cleanup:
+    lua_pop(cb->L, 3);
+}
+
+void callback_numeric(irc_session_t * session, unsigned int event, const char * origin, const char ** params, unsigned int count) {
+    struct callback * cb = irc_get_ctx(session);
+    if (cb == 0)
+        return;
+    lua_rawgeti(cb->L, LUA_REGISTRYINDEX, cb->ref);
+    // lua_rawgetp(L, -2, (void *)cb);
+    lua_pushlightuserdata(cb->L, (void *)cb);
+    lua_gettable(cb->L, -2);
+    luaL_getmetafield(cb->L, -1, "__callbacks");
+    lua_rawgeti(cb->L, -1, event);
+    if (lua_isnil(cb->L, -1))
+        goto cleanup;
+    lua_pushstring(cb->L, origin);
+    for (int i = 0; i < count; i++) {
+        lua_pushstring(cb->L, params[i]);
+    }
+    lua_pcall(cb->L, count+1, LUA_MULTRET, 0);
+cleanup:
+    lua_pop(cb->L, 3);
+}
+
+/* SESSION FUNCTIONS */
+// TODO irc_send_raw, select_descriptors, dcc
 
 static irc_session_t * session_get(lua_State * L) {
     struct lsession * ls = luaL_checkudata(L, 1, "irc_session");
@@ -181,12 +273,15 @@ static int session_cmd_quit(lua_State * L) {
     return 1;
 }
 
-// TODO: irc_send_raw
-// TODO: dcc
-
 static int session_run(lua_State * L) {
     irc_session_t * session = session_get(L);
     lua_pushboolean(L, !irc_run(session));
+    return 1;
+}
+
+static int session_strerror(lua_State * L) {
+    irc_session_t * session = session_get(L);
+    lua_pushstring(L, irc_strerror(irc_errno(session)));
     return 1;
 }
 
@@ -202,56 +297,6 @@ static int session_set_callback(lua_State * L) {
     lua_pushvalue(L, 3);
     lua_settable(L, 4);
     return 0;
-}
-
-static int session_strerror(lua_State * L) {
-    irc_session_t * session = session_get(L);
-    lua_pushstring(L, irc_strerror(irc_errno(session)));
-    return 1;
-}
-
-void callback_generic(irc_session_t * session, const char * event, const char * origin, const char ** params, unsigned int count) {
-    struct callback * cb = irc_get_ctx(session);
-    if (cb == 0)
-        return;
-    lua_rawgeti(cb->L, LUA_REGISTRYINDEX, cb->ref);
-    // lua_rawgetp(L, -2, (void *)cb);
-    lua_pushlightuserdata(cb->L, (void *)cb);
-    lua_gettable(cb->L, -2);
-    luaL_getmetafield(cb->L, -1, "__callbacks");
-    lua_getfield(cb->L, -1, event);
-    if (lua_isnil(cb->L, -1))
-        goto cleanup;
-    lua_pushstring(cb->L, origin);
-    for (int i = 0; i < count; i++) {
-        lua_pushstring(cb->L, params[i]);
-    }
-    lua_pcall(cb->L, count+1, LUA_MULTRET, 0);
-cleanup:
-    lua_pop(cb->L, 3);
-}
-
-// FIXME: DRY
-
-void callback_numeric(irc_session_t * session, unsigned int event, const char * origin, const char ** params, unsigned int count) {
-    struct callback * cb = irc_get_ctx(session);
-    if (cb == 0)
-        return;
-    lua_rawgeti(cb->L, LUA_REGISTRYINDEX, cb->ref);
-    // lua_rawgetp(L, -2, (void *)cb);
-    lua_pushlightuserdata(cb->L, (void *)cb);
-    lua_gettable(cb->L, -2);
-    luaL_getmetafield(cb->L, -1, "__callbacks");
-    lua_rawgeti(cb->L, -1, event);
-    if (lua_isnil(cb->L, -1))
-        goto cleanup;
-    lua_pushstring(cb->L, origin);
-    for (int i = 0; i < count; i++) {
-        lua_pushstring(cb->L, params[i]);
-    }
-    lua_pcall(cb->L, count+1, LUA_MULTRET, 0);
-cleanup:
-    lua_pop(cb->L, 3);
 }
 
 static int session_destroy(lua_State * L) {
@@ -331,6 +376,14 @@ static int session_create(lua_State * L) {
 }
 
 int luaopen_ircclient(lua_State * L) {
+    static const luaL_Reg ircclient[] = {
+        { "version", l_get_version },
+        { "color_strip", l_color_strip_from_mirc },
+        { "color_convert", l_color_convert_from_mirc },
+        { "get_nick", l_target_get_nick },
+        { "get_host", l_target_get_host },
+        { NULL, NULL }
+    };
     lua_newtable(L);
     lua_newtable(L);
     lua_pushstring(L, "v");
@@ -338,6 +391,7 @@ int luaopen_ircclient(lua_State * L) {
     lua_setmetatable(L, -2);
     int tag = luaL_ref(L, LUA_REGISTRYINDEX);
     lua_newtable(L);
+    REGISTER(L, ircclient);
     lua_pushnumber(L, tag);
     lua_pushcclosure(L, session_create, 1);
     lua_setfield(L, -2, "create_session");
