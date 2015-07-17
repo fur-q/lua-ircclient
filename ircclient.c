@@ -54,48 +54,39 @@ static int lib_color_convert_from_mirc(lua_State * L) {
 }
 
 /* CALLBACK WRAPPERS */
-// FIXME DRY
 
-void callback_generic(irc_session_t * session, const char * event, const char * origin, const char ** params, unsigned int count) {
+void cb_event(irc_session_t * session, const char * evt_s, unsigned int evt_i,
+              const char * origin, const char ** params, unsigned int count) {
     struct callback * cb = irc_get_ctx(session);
-    if (cb == 0)
+    if (!cb)
         return;
     lua_rawgeti(cb->L, LUA_REGISTRYINDEX, cb->ref);
     // lua_rawgetp(L, -2, (void *)cb);
     lua_pushlightuserdata(cb->L, (void *)cb);
     lua_gettable(cb->L, -2);
     luaL_getmetafield(cb->L, -1, "__callbacks");
-    lua_getfield(cb->L, -1, event);
+    if (evt_s)
+        lua_getfield(cb->L, -1, evt_s);
+    else
+        lua_rawgeti(cb->L, -1, evt_i);
     if (lua_isnil(cb->L, -1))
         goto cleanup;
     lua_pushstring(cb->L, origin);
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < count; i++)
         lua_pushstring(cb->L, params[i]);
-    }
     lua_pcall(cb->L, count+1, 0, 0);
 cleanup:
     lua_pop(cb->L, 3);
 }
 
-void callback_numeric(irc_session_t * session, unsigned int event, const char * origin, const char ** params, unsigned int count) {
-    struct callback * cb = irc_get_ctx(session);
-    if (cb == 0)
-        return;
-    lua_rawgeti(cb->L, LUA_REGISTRYINDEX, cb->ref);
-    // lua_rawgetp(L, -2, (void *)cb);
-    lua_pushlightuserdata(cb->L, (void *)cb);
-    lua_gettable(cb->L, -2);
-    luaL_getmetafield(cb->L, -1, "__callbacks");
-    lua_rawgeti(cb->L, -1, event);
-    if (lua_isnil(cb->L, -1))
-        goto cleanup;
-    lua_pushstring(cb->L, origin);
-    for (int i = 0; i < count; i++) {
-        lua_pushstring(cb->L, params[i]);
-    }
-    lua_pcall(cb->L, count+1, 0, 0);
-cleanup:
-    lua_pop(cb->L, 3);
+void cb_eventname(irc_session_t * session, const char * event, const char * origin,
+                  const char ** params, unsigned int count) {
+    cb_event(session, event, 0, origin, params, count);
+}
+
+void cb_eventcode(irc_session_t * session, unsigned int event, const char * origin,
+                  const char ** params, unsigned int count) {
+    cb_event(session, 0, event, origin, params, count);
 }
 
 /* SESSION FUNCTIONS */
@@ -250,7 +241,7 @@ static int session_cmd_nick(lua_State * L) {
     return util_ircerror(L, irc_cmd_nick(session, newnick));
 }
 
-// FIXME takes comma-separated list; should join multiple args
+// TODO concat multiple args
 static int session_cmd_whois(lua_State * L) {
     irc_session_t * session = session_get(L);
     const char * nick = luaL_checkstring(L, 2);
@@ -324,11 +315,10 @@ static int session_destroy(lua_State * L) {
 
 static int session_create(lua_State * L) {
     irc_callbacks_t cbx = {
-        callback_generic, callback_generic, callback_generic, callback_generic,
-        callback_generic, callback_generic, callback_generic, callback_generic,
-        callback_generic, callback_generic, callback_generic, callback_generic,
-        callback_generic, callback_generic, callback_generic, callback_generic,
-        callback_generic, callback_generic, callback_numeric 
+        cb_eventname, cb_eventname, cb_eventname, cb_eventname, cb_eventname,
+        cb_eventname, cb_eventname, cb_eventname, cb_eventname, cb_eventname,
+        cb_eventname, cb_eventname, cb_eventname, cb_eventname, cb_eventname,
+        cb_eventname, cb_eventname, cb_eventname, cb_eventcode
     };
     struct lsession * ls = lua_newuserdata(L, sizeof(struct lsession *));
     ls->session = irc_create_session(&cbx);
