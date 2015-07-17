@@ -4,9 +4,11 @@
 #include "ircclient.h"
 
 #if LUA_VERSION_NUM > 501
-#define REGISTER(L, r) luaL_setfuncs(L, r, 0)
+#define REGISTER(L, idx) luaL_setfuncs(L, idx, 0)
+#define OBJLEN(L, idx) lua_rawlen(L, idx)
 #else
-#define REGISTER(L, r) luaL_register(L, NULL, r)
+#define REGISTER(L, idx) luaL_register(L, NULL, idx)
+#define OBJLEN(L, idx) lua_objlen(L, idx)
 #endif
 
 /* LIBRARY FUNCTIONS */
@@ -90,7 +92,7 @@ void cb_eventcode(irc_session_t * session, unsigned int event, const char * orig
 }
 
 /* SESSION FUNCTIONS */
-// TODO select_descriptors, dcc
+// TODO dcc
 
 static inline irc_session_t * session_get(lua_State * L) {
     struct lsession * ls = luaL_checkudata(L, 1, "irc_session");
@@ -285,6 +287,53 @@ static int session_run(lua_State * L) {
     return util_ircerror(L, irc_run(session));
 }
 
+static int session_add_descriptors(lua_State * L) {
+    irc_session_t * session = session_get(L);
+    luaL_checktype(L, 2, LUA_TTABLE);
+    luaL_checktype(L, 3, LUA_TTABLE);
+    int rfd_count = OBJLEN(L, 2), wfd_count = OBJLEN(L, 3);
+    int max = 0;
+    fd_set rfd, wfd;
+    FD_ZERO(&rfd);
+    FD_ZERO(&wfd);
+    if (irc_add_select_descriptors(session, &rfd, &wfd, &max)) {
+        lua_pushnil(L);
+        return 1;
+    }
+    for (int i = 0; i <= max; i++) {
+        if (FD_ISSET(i, &rfd)) {
+            lua_pushinteger(L, i);
+            lua_rawseti(L, 2, ++rfd_count);
+        }
+        if (FD_ISSET(i, &wfd)) {
+            lua_pushinteger(L, i);
+            lua_rawseti(L, 3, ++wfd_count);
+        }
+    }
+    return 2;
+}
+
+static int session_process_descriptors(lua_State * L) {
+    irc_session_t * session = session_get(L);
+    luaL_checktype(L, 2, LUA_TTABLE);
+    luaL_checktype(L, 3, LUA_TTABLE);
+    fd_set rfd, wfd;
+    FD_ZERO(&rfd);
+    FD_ZERO(&wfd);
+    lua_pushnil(L);
+    while (lua_next(L, 2) != 0) {
+        FD_SET(lua_tointeger(L, -1), &rfd);
+        lua_pop(L, 1);
+    }
+    lua_pushnil(L);
+    while (lua_next(L, 3) != 0) {
+        FD_SET(lua_tointeger(L, -1), &wfd);
+        lua_pop(L, 1);
+    }
+    // FIXME sets error through irc_errno
+    return util_ircerror(L, irc_process_select_descriptors(session, &rfd, &wfd));
+}
+
 static int session_strerror(lua_State * L) {
     irc_session_t * session = session_get(L);
     lua_pushstring(L, irc_strerror(irc_errno(session)));
@@ -294,7 +343,12 @@ static int session_strerror(lua_State * L) {
 static int session_set_callback(lua_State * L) {
     session_get(L);
     luaL_checktype(L, 2, LUA_TSTRING);
-    luaL_checktype(L, 3, LUA_TFUNCTION);
+    if (!(lua_isfunction(L, 3) || lua_isnil(L, 3))) {
+        const char * msg = lua_pushfstring(
+            L, "function expected, got %s", lua_typename(L, 3)
+        );
+        return luaL_argerror(L, 3, msg);
+    }
     luaL_getmetafield(L, 1, "__callbacks");
     lua_getglobal(L, "string");
     lua_getfield(L, -1, "upper");
@@ -344,7 +398,6 @@ static int session_create(lua_State * L) {
         { "connect", session_connect },
         { "disconnect", session_disconnect },
         { "is_connected", session_is_connected },
-        { "run", session_run },
         { "join", session_cmd_join },
         { "part", session_cmd_part },
         { "invite", session_cmd_invite },
@@ -363,6 +416,9 @@ static int session_create(lua_State * L) {
         { "whois", session_cmd_whois },
         { "quit", session_cmd_quit },
         { "send_raw", session_send_raw },
+        { "add_descriptors", session_add_descriptors },
+        { "process_descriptors", session_process_descriptors },
+        { "run", session_run },
         { "option_set", session_option_set },
         { "option_reset", session_option_reset },
         { "register", session_set_callback },
