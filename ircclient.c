@@ -5,10 +5,11 @@
 
 #if LUA_VERSION_NUM > 501
 #define REGISTER(L, idx) luaL_setfuncs(L, idx, 0)
-#define OBJLEN(L, idx) lua_rawlen(L, idx)
 #else
 #define REGISTER(L, idx) luaL_register(L, NULL, idx)
-#define OBJLEN(L, idx) lua_objlen(L, idx)
+#define lua_rawlen(L, idx) lua_objlen(L, idx)
+#define lua_getuservalue(L, idx) lua_getfenv(L, idx)
+#define lua_setuservalue(L, idx) lua_setfenv(L, idx)
 #endif
 
 /* LIBRARY FUNCTIONS */
@@ -66,7 +67,7 @@ void cb_event(irc_session_t * session, const char * evt_s, unsigned int evt_i,
     // lua_rawgetp(L, -2, (void *)cb);
     lua_pushlightuserdata(cb->L, (void *)cb);
     lua_gettable(cb->L, -2);
-    luaL_getmetafield(cb->L, -1, "__callbacks");
+    lua_getuservalue(cb->L, -1);
     if (evt_s)
         lua_getfield(cb->L, -1, evt_s);
     else
@@ -294,7 +295,7 @@ static int session_add_descriptors(lua_State * L) {
     irc_session_t * session = session_get(L);
     luaL_checktype(L, 2, LUA_TTABLE);
     luaL_checktype(L, 3, LUA_TTABLE);
-    int rfd_count = OBJLEN(L, 2), wfd_count = OBJLEN(L, 3);
+    int rfd_count = lua_rawlen(L, 2), wfd_count = lua_rawlen(L, 3);
     int max = 0;
     fd_set rfd, wfd;
     FD_ZERO(&rfd);
@@ -351,7 +352,7 @@ static int session_set_callback(lua_State * L) {
         );
         return luaL_argerror(L, 3, msg);
     }
-    luaL_getmetafield(L, 1, "__callbacks");
+    lua_getuservalue(L, 1);
     lua_getglobal(L, "string");
     lua_getfield(L, -1, "upper");
     lua_pushvalue(L, 2);
@@ -436,7 +437,7 @@ static int session_create(lua_State * L) {
     lua_pushcfunction(L, session_destroy);
     lua_setfield(L, -2, "__gc");
     lua_newtable(L);
-    lua_setfield(L, -2, "__callbacks");
+    lua_setuservalue(L, -3);
     lua_setmetatable(L, -2);
     return 1;
 }
