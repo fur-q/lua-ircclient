@@ -6,7 +6,7 @@
 #if LUA_VERSION_NUM > 501
 #define REGISTER(L, idx) luaL_setfuncs(L, idx, 0)
 #else
-#define REGISTER(L, idx) luaL_register(L, NULL, idx)
+#define REGISTER(L, idx) luaL_register(L, 0, idx)
 #define lua_rawlen(L, idx) lua_objlen(L, idx)
 #define lua_getuservalue(L, idx) lua_getfenv(L, idx)
 #define lua_setuservalue(L, idx) lua_setfenv(L, idx)
