@@ -1,2 +1,2 @@
-ircclient.so
-test.lua
+*.so
+test*
