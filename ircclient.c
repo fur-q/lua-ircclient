@@ -81,7 +81,7 @@ lua_State * util_cb_getsession(irc_session_t * session) { // +3
     if (!cb)
         return 0;
     lua_rawgeti(cb->L, LUA_REGISTRYINDEX, cb->ref);
-    lua_rawgetp(L, -2, (void *)cb);
+    lua_rawgetp(cb->L, -2, (void *)cb);
     lua_getuservalue(cb->L, -1);
     return cb->L;
 }
