@@ -1,2 +1,2 @@
 *.so
-test*
+test*.lua

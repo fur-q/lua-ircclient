@@ -32,51 +32,46 @@ static int lib_get_version(lua_State * L) {
     return 2;
 }
 
-static int lib_target_get_nick(lua_State * L) {
+static inline int util_target(lua_State * L, void (func)(const char *, char *, size_t)) {
     const char * origin = luaL_checkstring(L, 1);
     unsigned int bufsize = luaL_optint(L, 2, 128);
     char buffer[bufsize];
-    irc_target_get_nick(origin, buffer, bufsize);
+    func(origin, buffer, bufsize);
     lua_pushstring(L, buffer);
     return 1;
 }
 
+static int lib_target_get_nick(lua_State * L) {
+    return util_target(L, irc_target_get_nick);
+}
+
 static int lib_target_get_host(lua_State * L) {
-    const char * origin = luaL_checkstring(L, 1);
-    unsigned int bufsize = luaL_optint(L, 2, 128);
-    char buffer[bufsize];
-    irc_target_get_host(origin, buffer, bufsize);
-    lua_pushstring(L, buffer);
+    return util_target(L, irc_target_get_host);
+}
+
+static inline int util_color(lua_State * L, char * (func)(const char *)) {
+    const char * message = luaL_checkstring(L, 1);
+    char * out = func(message);
+    lua_pushstring(L, out);
+    free(out);
     return 1;
 }
 
 static int lib_color_strip_from_mirc(lua_State * L) {
-    const char * message = luaL_checkstring(L, 1);
-    char * out = irc_color_strip_from_mirc(message);
-    lua_pushstring(L, out);
-    free(out);
-    return 1;
+    return util_color(L, irc_color_strip_from_mirc);
 }
 
 static int lib_color_convert_from_mirc(lua_State * L) {
-    const char * message = luaL_checkstring(L, 1);
-    char * out = irc_color_convert_from_mirc(message);
-    lua_pushstring(L, out);
-    free(out);
-    return 1;
+    return util_color(L, irc_color_convert_from_mirc);
 }
 
 static int lib_color_convert_to_mirc(lua_State * L) {
-    const char * message = luaL_checkstring(L, 1);
-    char * out = irc_color_convert_to_mirc(message);
-    lua_pushstring(L, out);
-    free(out);
-    return 1;
+    return util_color(L, irc_color_convert_to_mirc);
 }
 
 /* CALLBACK WRAPPERS */
 
-lua_State * util_cb_getsession(irc_session_t * session) { // +3
+static inline lua_State * util_getsession_cb(irc_session_t * session) {
     struct cb_ctx * cb = irc_get_ctx(session);
     if (!cb)
         return 0;
@@ -86,9 +81,9 @@ lua_State * util_cb_getsession(irc_session_t * session) { // +3
     return cb->L;
 }
 
-void cb_event(irc_session_t * session, const char * evt_s, unsigned int evt_i, const char * origin,
+static void cb_event(irc_session_t * session, const char * evt_s, unsigned int evt_i, const char * origin,
               const char ** params, unsigned int count) {
-    lua_State * L = util_cb_getsession(session);
+    lua_State * L = util_getsession_cb(session);
     if (!L)
         return;
     lua_getfield(L, -1, "events");
@@ -107,9 +102,9 @@ cleanup:
     lua_pop(L, 5);
 }
 
-void cb_event_dcc(irc_session_t * session, const char * evt, const char * nick, const char * addr, 
+static void cb_event_dcc(irc_session_t * session, const char * evt, const char * nick, const char * addr, 
                   const char * filename, unsigned long size, irc_dcc_t id) {
-    lua_State * L = util_cb_getsession(session);
+    lua_State * L = util_getsession_cb(session);
     if (!L)
         return;
     lua_getfield(L, -1, "events");
@@ -129,28 +124,28 @@ cleanup:
     lua_pop(L, 5);
 }
 
-void cb_eventname(irc_session_t * session, const char * event, const char * origin, 
+static void cb_eventname(irc_session_t * session, const char * event, const char * origin, 
                   const char ** params, unsigned int count) {
     cb_event(session, event, 0, origin, params, count);
 }
 
-void cb_eventcode(irc_session_t * session, unsigned int event, const char * origin,
+static void cb_eventcode(irc_session_t * session, unsigned int event, const char * origin,
                   const char ** params, unsigned int count) {
     cb_event(session, 0, event, origin, params, count);
 }
 
-void cb_event_chat(irc_session_t * session, const char * nick, const char * addr, irc_dcc_t id) {
+static void cb_event_chat(irc_session_t * session, const char * nick, const char * addr, irc_dcc_t id) {
     cb_event_dcc(session, "CHAT", nick, addr, 0, 0, id); 
 }
 
-void cb_event_send(irc_session_t * session, const char * nick, const char * addr, 
+static void cb_event_send(irc_session_t * session, const char * nick, const char * addr, 
                 const char * filename, unsigned long size, irc_dcc_t id) {
     cb_event_dcc(session, "SEND", nick, addr, filename, size, id);
 }
 
-void cb_dcc(irc_session_t * session, irc_dcc_t id, int status, void * ctx, const char * data, 
+static void cb_dcc(irc_session_t * session, irc_dcc_t id, int status, void * ctx, const char * data, 
             unsigned int length) {
-    lua_State * L = util_cb_getsession(session);
+    lua_State * L = util_getsession_cb(session);
     if (!L)
         return;
     lua_getfield(L, -1, "dcc");
@@ -175,12 +170,12 @@ void cb_dcc(irc_session_t * session, irc_dcc_t id, int status, void * ctx, const
 
 /* SESSION FUNCTIONS */
 
-static inline irc_session_t * session_get(lua_State * L) {
+static inline irc_session_t * util_getsession(lua_State * L) {
     struct lsession * ls = luaL_checkudata(L, 1, "irc_session");
     return ls->session;
 }
 
-static int util_ircerror(lua_State * L, irc_session_t * session, int status) {
+static inline int util_pushstatus(lua_State * L, irc_session_t * session, int status) {
     if (status) {
         lua_pushnil(L);
         lua_pushinteger(L, irc_errno(session));
@@ -190,10 +185,10 @@ static int util_ircerror(lua_State * L, irc_session_t * session, int status) {
     return 1;
 }
 
-#define STATUS(ok) util_ircerror(L, session, ok)
+#define STATUS(ok) util_pushstatus(L, session, ok)
 
 static int session_connect(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     luaL_checktype(L, 2, LUA_TTABLE);
     lua_getfield(L, 2, "host");
     lua_getfield(L, 2, "port");
@@ -214,71 +209,71 @@ static int session_connect(lua_State * L) {
 }
 
 static int session_disconnect(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     irc_disconnect(session);
     return 0;
 }
 
 static int session_is_connected(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     lua_pushboolean(L, irc_is_connected(session));
     return 1;
 }
 
 static int session_cmd_join(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * chan = luaL_checkstring(L, 2);
     const char * key = luaL_optstring(L, 3, 0);
     return STATUS(irc_cmd_join(session, chan, key));
 }
 
 static int session_cmd_part(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * chan = luaL_checkstring(L, 2);
     return STATUS(irc_cmd_part(session, chan));
 }
 
 static int session_cmd_invite(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * nick = luaL_checkstring(L, 2);
     const char * chan = luaL_checkstring(L, 3);
     return STATUS(irc_cmd_invite(session, nick, chan));
 }
 
 static int session_cmd_names(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * chan = luaL_checkstring(L, 2);
     return STATUS(irc_cmd_names(session, chan));
 }
 
 static int session_cmd_list(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * chan = luaL_optstring(L, 2, 0);
     return STATUS(irc_cmd_list(session, chan));
 }
 
 static int session_cmd_topic(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * chan = luaL_checkstring(L, 2);
     const char * topic = luaL_optstring(L, 3, 0);
     return STATUS(irc_cmd_topic(session, chan, topic));
 }
 
 static int session_cmd_channel_mode(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * chan = luaL_checkstring(L, 2);
     const char * mode = luaL_optstring(L, 3, 0);
     return STATUS(irc_cmd_channel_mode(session, chan, mode));
 }
 
 static int session_cmd_user_mode(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * mode = luaL_optstring(L, 2, 0);
     return STATUS(irc_cmd_user_mode(session, mode));
 }
 
 static int session_cmd_kick(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * nick = luaL_checkstring(L, 2);
     const char * chan = luaL_checkstring(L, 3);
     const char * reason = luaL_optstring(L, 4, 0);
@@ -286,75 +281,61 @@ static int session_cmd_kick(lua_State * L) {
 }
 
 static int session_cmd_msg(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * target = luaL_checkstring(L, 2);
     const char * msg = luaL_checkstring(L, 3);
     return STATUS(irc_cmd_msg(session, target, msg));
 }
 
 static int session_cmd_me(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * target = luaL_checkstring(L, 2);
     const char * msg = luaL_checkstring(L, 3);
     return STATUS(irc_cmd_me(session, target, msg));
 }
 
 static int session_cmd_notice(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * target = luaL_checkstring(L, 2);
     const char * msg = luaL_checkstring(L, 3);
     return STATUS(irc_cmd_notice(session, target, msg));
 }
 
 static int session_cmd_ctcp_request(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * target = luaL_checkstring(L, 2);
     const char * msg = luaL_checkstring(L, 3);
     return STATUS(irc_cmd_ctcp_request(session, target, msg));
 }
 
 static int session_cmd_ctcp_reply(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * target = luaL_checkstring(L, 2);
     const char * msg = luaL_checkstring(L, 3);
     return STATUS(irc_cmd_ctcp_reply(session, target, msg));
 }
 
 static int session_cmd_nick(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * newnick = luaL_checkstring(L, 2);
     return STATUS(irc_cmd_nick(session, newnick));
 }
 
 // TODO concat multiple args
 static int session_cmd_whois(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * nick = luaL_checkstring(L, 2);
     return STATUS(irc_cmd_whois(session, nick));
 }
 
 static int session_cmd_quit(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * reason = luaL_optstring(L, 2, 0);
     return STATUS(irc_cmd_quit(session, reason));
 }
 
-static int session_option_set(lua_State * L) {
-    irc_session_t * session = session_get(L);
-    unsigned int option = luaL_checkint(L, 2);
-    irc_option_set(session, option);
-    return 0;
-}
-
-static int session_option_reset(lua_State * L) {
-    irc_session_t * session = session_get(L);
-    unsigned int option = luaL_checkint(L, 2);
-    irc_option_reset(session, option);
-    return 0;
-}
-
 static int session_send_raw(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     luaL_checktype(L, 2, LUA_TSTRING);
     lua_getglobal(L, "string");
     lua_getfield(L, 3, "format");
@@ -373,7 +354,7 @@ static inline void util_dccid_add(lua_State * L, irc_dcc_t id) {
 }
 
 static int session_dcc_accept(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     irc_dcc_t id = luaL_checkint(L, 2);
     luaL_checktype(L, 3, LUA_TFUNCTION);
     int ok = irc_dcc_accept(session, id, 0, cb_dcc);
@@ -383,13 +364,13 @@ static int session_dcc_accept(lua_State * L) {
 }
 
 static int session_dcc_decline(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     irc_dcc_t id = luaL_checkint(L, 2);
     return STATUS(irc_dcc_decline(session, id));
 }
 
 static int session_dcc_chat(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * nick = luaL_checkstring(L, 2);
     luaL_checktype(L, 3, LUA_TFUNCTION);
     irc_dcc_t id = 0;
@@ -400,14 +381,14 @@ static int session_dcc_chat(lua_State * L) {
 }
 
 static int session_dcc_msg(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     irc_dcc_t id = luaL_checkint(L, 2);
     const char * msg = luaL_checkstring(L, 3);
     return STATUS(irc_dcc_msg(session, id, msg));
 }
 
 static int session_dcc_sendfile(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     const char * nick = luaL_checkstring(L, 2);
     const char * file = luaL_checkstring(L, 3);
     luaL_checktype(L, 4, LUA_TFUNCTION);
@@ -419,7 +400,7 @@ static int session_dcc_sendfile(lua_State * L) {
 }
 
 static int session_dcc_destroy(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     irc_dcc_t id = luaL_checkint(L, 2);
     lua_getuservalue(L, 1);
     lua_getfield(L, -1, "dcc");
@@ -428,13 +409,27 @@ static int session_dcc_destroy(lua_State * L) {
     return STATUS(irc_dcc_destroy(session, id));
 }
 
+static int session_option_set(lua_State * L) {
+    irc_session_t * session = util_getsession(L);
+    unsigned int option = luaL_checkint(L, 2);
+    irc_option_set(session, option);
+    return 0;
+}
+
+static int session_option_reset(lua_State * L) {
+    irc_session_t * session = util_getsession(L);
+    unsigned int option = luaL_checkint(L, 2);
+    irc_option_reset(session, option);
+    return 0;
+}
+
 static int session_run(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     return STATUS(irc_run(session));
 }
 
 static int session_add_descriptors(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     luaL_checktype(L, 2, LUA_TTABLE);
     luaL_checktype(L, 3, LUA_TTABLE);
     int rfd_count = lua_rawlen(L, 2), wfd_count = lua_rawlen(L, 3);
@@ -460,7 +455,7 @@ static int session_add_descriptors(lua_State * L) {
 }
 
 static int session_process_descriptors(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     luaL_checktype(L, 2, LUA_TTABLE);
     luaL_checktype(L, 3, LUA_TTABLE);
     fd_set rfd, wfd;
@@ -480,13 +475,13 @@ static int session_process_descriptors(lua_State * L) {
 }
 
 static int session_strerror(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     lua_pushstring(L, irc_strerror(irc_errno(session)));
     return 1;
 }
 
 static int session_set_callback(lua_State * L) {
-    session_get(L);
+    util_getsession(L);
     luaL_checktype(L, 2, LUA_TSTRING);
     if (!(lua_isfunction(L, 3) || lua_isnil(L, 3))) {
         const char * msg = lua_pushfstring( L, "function expected, got %s", lua_typename(L, 3));
@@ -505,7 +500,7 @@ static int session_set_callback(lua_State * L) {
 }
 
 static int session_destroy(lua_State * L) {
-    irc_session_t * session = session_get(L);
+    irc_session_t * session = util_getsession(L);
     struct cb_ctx * ctx = irc_get_ctx(session);
     free(ctx);
     irc_destroy_session(session);
@@ -573,8 +568,8 @@ static int session_create(lua_State * L) {
         { "run", session_run },
         { "option_set", session_option_set },
         { "option_reset", session_option_reset },
-        { "register", session_set_callback },
         { "strerror", session_strerror },
+        { "register", session_set_callback },
         { NULL, NULL }
     };
     luaL_newmetatable(L, "irc_session");
