@@ -10,7 +10,7 @@
 #define lua_rawlen(L, idx) lua_objlen(L, idx)
 #define lua_getuservalue(L, idx) lua_getfenv(L, idx)
 #define lua_setuservalue(L, idx) lua_setfenv(L, idx)
-#define lua_rawgetp(L, idx, ptr) lua_pushlightuserdata(L, ptr); lua_gettable(L, idx)
+#define lua_rawgetp(L, idx, ptr) lua_pushlightuserdata(L, ptr); lua_gettable(L, (idx - 1))
 #endif
 
 struct lsession {
@@ -76,7 +76,7 @@ static inline lua_State * util_getsession_cb(irc_session_t * session) {
     if (!cb)
         return 0;
     lua_rawgeti(cb->L, LUA_REGISTRYINDEX, cb->ref);
-    lua_rawgetp(cb->L, -2, (void *)cb);
+    lua_rawgetp(cb->L, -1, (void *)cb);
     lua_getuservalue(cb->L, -1);
     return cb->L;
 }
@@ -484,7 +484,7 @@ static int session_set_callback(lua_State * L) {
     util_getsession(L);
     luaL_checktype(L, 2, LUA_TSTRING);
     if (!(lua_isfunction(L, 3) || lua_isnil(L, 3))) {
-        const char * msg = lua_pushfstring( L, "function expected, got %s", lua_typename(L, 3));
+        const char * msg = lua_pushfstring(L, "function expected, got %s", lua_typename(L, 3));
         return luaL_argerror(L, 3, msg);
     }
     lua_getuservalue(L, 1);
