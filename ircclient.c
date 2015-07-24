@@ -404,7 +404,6 @@ static int session_dcc_sendfile(lua_State * L) {
     luaL_checktype(L, 4, LUA_TFUNCTION);
     irc_dcc_t id = 0;
     int ok = irc_dcc_sendfile(session, 0, nick, file, cb_dcc, &id);
-    printf("%d\n", id);
     if (!ok)
         util_dccid_add(L, id);
     return STATUS(ok);
