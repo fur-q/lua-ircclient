@@ -10,7 +10,7 @@
 #define lua_rawlen(L, idx) lua_objlen(L, idx)
 #define lua_getuservalue(L, idx) lua_getfenv(L, idx)
 #define lua_setuservalue(L, idx) lua_setfenv(L, idx)
-#define lua_rawgetp(L, idx, ptr) lua_pushlightuserdata(L, ptr); lua_gettable(L, (idx - 1))
+#define lua_rawgetp(L, idx, ptr) lua_pushlightuserdata(L, ptr); lua_gettable(L, (idx) - 1)
 #endif
 
 struct lsession {
@@ -30,6 +30,12 @@ static int lib_get_version(lua_State * L) {
     lua_pushinteger(L, high);
     lua_pushinteger(L, low);
     return 2;
+}
+
+static int lib_strerror(lua_State * L) {
+    int err = luaL_checkint(L, 1);
+    lua_pushstring(L, irc_strerror(err));
+    return 1;
 }
 
 static inline int util_target(lua_State * L, void (func)(const char *, char *, size_t)) {
@@ -160,7 +166,11 @@ static void cb_dcc(irc_session_t * session, irc_dcc_t id, int status, void * ctx
         lua_pushboolean(L, 1);
     lua_pushinteger(L, length);
     lua_pushstring(L, data);
-    lua_pcall(L, 3, 0, 0);
+    int ok = lua_pcall(L, 3, 0, 0);
+    if (ok) {
+        // FIXME do something with this error
+        lua_pop(L, 1);
+    }
     if (status) {
         lua_pushnil(L);
         lua_rawseti(L, -2, id);
@@ -349,7 +359,7 @@ static int session_send_raw(lua_State * L) {
 static inline void util_dccid_add(lua_State * L, irc_dcc_t id) {
     lua_getuservalue(L, 1);
     lua_getfield(L, -1, "dcc");
-    lua_pushvalue(L, 3);
+    lua_pushvalue(L, -3);
     lua_rawseti(L, -2, id);
 }
 
@@ -394,6 +404,7 @@ static int session_dcc_sendfile(lua_State * L) {
     luaL_checktype(L, 4, LUA_TFUNCTION);
     irc_dcc_t id = 0;
     int ok = irc_dcc_sendfile(session, 0, nick, file, cb_dcc, &id);
+    printf("%d\n", id);
     if (!ok)
         util_dccid_add(L, id);
     return STATUS(ok);
@@ -474,12 +485,6 @@ static int session_process_descriptors(lua_State * L) {
     return STATUS(irc_process_select_descriptors(session, &rfd, &wfd));
 }
 
-static int session_strerror(lua_State * L) {
-    irc_session_t * session = util_getsession(L);
-    lua_pushstring(L, irc_strerror(irc_errno(session)));
-    return 1;
-}
-
 static int session_set_callback(lua_State * L) {
     util_getsession(L);
     luaL_checktype(L, 2, LUA_TSTRING);
@@ -518,7 +523,7 @@ static int session_create(lua_State * L) {
     ls->session = irc_create_session(&cbx);
     if (!ls->session) {
         lua_pushnil(L);
-        lua_pushstring(L, irc_strerror(irc_errno(0)));
+        lua_pushstring(L, irc_strerror(irc_errno(0))); // ??
         return 2;
     }
     // set context
@@ -568,7 +573,6 @@ static int session_create(lua_State * L) {
         { "run", session_run },
         { "option_set", session_option_set },
         { "option_reset", session_option_reset },
-        { "strerror", session_strerror },
         { "register", session_set_callback },
         { NULL, NULL }
     };
@@ -636,6 +640,7 @@ static inline void util_setoptions(lua_State * L) {
 int luaopen_ircclient(lua_State * L) {
     static const luaL_Reg ircclient[] = {
         { "version", lib_get_version },
+        { "strerror", lib_strerror },
         { "color_strip", lib_color_strip_from_mirc },
         { "color_convert_from_mirc", lib_color_convert_from_mirc },
         { "color_convert_to_mirc", lib_color_convert_to_mirc },
