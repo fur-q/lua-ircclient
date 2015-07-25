@@ -8,7 +8,7 @@ Returns the libircclient version major and minor version numbers.
 
 ##### strerror(err)
 
-Returns a string description of the libircclient error number *err*.
+Returns a string description of the [libircclient error](#errors) *err*.
 
 ##### get_nick(mask)
 
@@ -24,13 +24,11 @@ Strips all mIRC formatting from the provided message and returns the stripped me
 
 ##### color_convert_to_mirc()
 
-Converts libircclient's internal formatting codes in *msg* to mIRC formatting and returns the mIRC
-formatted message.
+Converts libircclient's internal formatting codes in *msg* to mIRC formatting and returns the converted message.
 
 ##### color_convert_from_mirc(msg)
 
-Converts mIRC formatting codes in *msg* to libircclient's internal formatting and returns the
-libircclient formatted message.
+Converts mIRC formatting codes in *msg* to libircclient's internal formatting and returns the converted message.
 
 ##### create_session()
 
@@ -41,10 +39,11 @@ Creates and returns a new IRC session.
 Unless otherwise specified, all session functions return *true* on success, and *nil, error* on
 failure.
 
-If a function returns *true*, it means the command was sent to the server. You must register a
-handler for the appropriate events to find out if the command was successful. For example, when
-joining a channel, a *JOIN* event will be fired on success, a *474* event will be fired if you are
-banned from the channel, a *475* event will be fired if you have provided the wrong key, et cetera.
+If a function returns *true*, it means the command was sent to the server. You must [register a
+handler](#sessionregisterevt-callback) for the appropriate events to find out if the command was
+successful. For example, when joining a channel, a *JOIN* event will be fired on success, a *474*
+event will be fired if you are banned from the channel, a *475* event will be fired if you have
+provided the wrong key, et cetera.
 
 ##### session:connect(args)
 
@@ -75,7 +74,8 @@ See [events](#events) for a list of events and callback function parameters.
 ##### session:run()
 
 Enter the main loop. This function will not return until the connection is terminated, either
-remotely or by calling *session.quit*. To use a different main loop, see *session.add_descriptors*.
+remotely or by calling [session.quit](#sessionquitreason). To use a different main loop, see
+[session.add_descriptors](#sessionadd_descriptorsrfd-wfd).
 
 ##### session:add_descriptors(rfd, wfd)
 
@@ -158,7 +158,7 @@ Change your nick to *newnick*.
 
 ##### session:whois(nick)
 
-Request whois information on *nick*.
+Request whois information on *nick*, which may be a nick or a comma-separated list of nicks.
 
 ##### session:quit(reason)
 
@@ -171,13 +171,15 @@ same as for *string.format*.
 
 ### Events
 
-Events are registered with *session.register* and called when the corresponding event is received from the IRC server.
+Events are registered with [session.register](#sessionregisterevt-callback) and called when the
+corresponding event is received from the IRC server.
 
 Unless otherwise specified, the first two parameters to the callback function are always the
 following: 
 
 - session: the session which triggered the callback
-- origin: the IRC mask (or nick, if options.STRIPNICKS is set) of the user who triggered the event
+- origin: the IRC mask (or nick, if [options.STRIPNICKS](#optionsstripnicks) is set) of the user who
+  triggered the event
 
 Any additional parameters are specified for each event.
 
@@ -370,7 +372,7 @@ An invalid argument was provided to a function (If this happens, there's a bug i
 
 ##### errors.RESOLV
 
-The hostname provided to *session.connect* could not be resolved into a valid IP address.
+The hostname provided to [session.connect](#sessionconnect) could not be resolved into a valid IP address.
 
 ##### errors.SOCKET
 
@@ -406,7 +408,8 @@ Either a DCC file could not be written or a DCC socket returned a write error.
 
 ##### errors.STATE
 
-A function was called at the wrong time, e.g. *session.join* was called on a disconnected session.
+A function was called at the wrong time, e.g. [session.join](#sessionjoinchan-key) was called on a
+disconnected session.
 
 ##### errors.TIMEOUT
 
@@ -440,5 +443,6 @@ An SSL handshake failed.
 
 ##### errors.SSL_CERT_VERIFY_FAILED
 
-The server is using an invalid or self-signed certificate and *options.SSL_NO_VERIFY* was not set.
+The server is using an invalid or self-signed certificate and
+[options.SSL_NO_VERIFY](#optionsssl_no_verify) was not set.
 
