@@ -97,15 +97,19 @@ static void cb_event(irc_session_t * session, const char * evt_s, unsigned int e
         lua_getfield(L, -1, evt_s);
     else
         lua_rawgeti(L, -1, evt_i);
-    if (lua_isnil(L, -1))
-        goto cleanup;
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 5);
+        return;
+    }
     lua_pushvalue(L, -4);
     lua_pushstring(L, origin);
     for (int i = 0; i < count; i++)
         lua_pushstring(L, params[i]);
-    lua_pcall(L, count+2, 0, 0);
-cleanup:
-    lua_pop(L, 5);
+    if (lua_pcall(L, count+2, 0, 0)) {
+        // FIXME do something with this error
+        lua_pop(L, 1);
+    }
+    lua_pop(L, 4);
 }
 
 static void cb_event_dcc(irc_session_t * session, const char * evt, const char * nick, const char * addr, 
@@ -115,19 +119,23 @@ static void cb_event_dcc(irc_session_t * session, const char * evt, const char *
         return;
     lua_getfield(L, -1, "events");
     lua_getfield(L, -1, evt);
-    if (lua_isnil(L, -1))
-        goto cleanup;
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 5);
+        return;
+    }
     lua_pushvalue(L, -4);
-    int top = lua_gettop(L);
+    int top = lua_gettop(L) - 1;
     lua_pushstring(L, nick);
     lua_pushstring(L, addr);
     lua_pushstring(L, filename);
     if (size)
         lua_pushinteger(L, size);
     lua_pushinteger(L, id);
-    lua_pcall(L, lua_gettop(L) - top, 0, 0);
-cleanup:
-    lua_pop(L, 5);
+    if (lua_pcall(L, lua_gettop(L) - top, 0, 0)) {
+        // FIXME do something with this error
+        lua_pop(L, 1);
+    }
+    lua_pop(L, 4);
 }
 
 static void cb_eventname(irc_session_t * session, const char * event, const char * origin, 
@@ -165,7 +173,7 @@ static void cb_dcc(irc_session_t * session, irc_dcc_t id, int status, void * ctx
     else
         lua_pushboolean(L, 1);
     lua_pushinteger(L, length);
-    lua_pushstring(L, data);
+    lua_pushlstring(L, data, length);
     int ok = lua_pcall(L, 3, 0, 0);
     if (ok) {
         // FIXME do something with this error
