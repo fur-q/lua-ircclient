@@ -20,7 +20,7 @@ Returns the host portion of the provided IRC mask.
 
 ##### color_strip(msg)
 
-Strips all mIRC formatting from the provided message and returns the stripped message.
+Strips all mIRC formatting from *msg* and returns the stripped message.
 
 ##### color_convert_to_mirc()
 
@@ -113,7 +113,7 @@ Request a list of nicknames on the channel *chan*.
 
 ##### session:list(chan)
 
-Request a list of channels. *chan* may contain a (comma-separated) list of channel names to search
+Request a list of channels. *chan* may contain a comma-separated list of channel names to search
 for.
 
 ##### session:topic(chan, topic)
@@ -130,7 +130,7 @@ If *mode* is set, set the modes on yourself; otherwise, request your current use
 
 ##### session:kick(nick, chan, reason)
 
-Kick *nick* from *chan* with optional *reason*.
+Kicks *nick* from *chan* with optional *reason*.
 
 ##### session:msg(target, msg)
 
@@ -163,6 +163,48 @@ Request whois information on *nick*, which may be a nick or a comma-separated li
 ##### session:quit(reason)
 
 Quit IRC with optional reason *reason*.
+
+##### session:dcc_accept(id, callback)
+
+Accept the DCC CHAT or DCC SEND request *id*.
+
+*callback* is a function which will be triggered upon receipt of DCC events. It takes the
+following parameters:
+
+- **status**: *true* if no error, otherwise [libircclient error](#errors) 
+- **length**: the length of *data* 
+- **data**: for DCC CHAT, a DCC CHAT message; for DCC SEND, a portion of the received file
+
+##### session:dcc_decline(id)
+
+Decline the DCC CHAT or DCC SEND request *id*.
+
+##### session:dcc_chat(nick, callback)
+
+Send a DCC CHAT request to *nick*. Returns the DCC session ID on success, or *nil, error* on
+failure.
+
+*callback* is a function which will be triggered upon receipt of DCC CHAT messages. It takes the
+following parameters:
+
+- **status**: *true* if no error, otherwise [libircclient error](#errors) 
+- **length**: the length of the message
+- **data**: the message
+
+##### session:dcc_msg(id, msg)
+
+Send a DCC CHAT message.
+
+##### session:dcc_sendfile(nick, filename, callback)
+
+Send a DCC SEND request to *nick* for the file *filename*. Returns the DCC session ID on success, or
+*nil, error* on failure. 
+
+*callback* is a function which will be triggered after a successfully sent packet or an error. It takes the
+following parameters:
+
+- **status**: *true* if no error, otherwise [libircclient error](#errors) 
+- **length**: the length of the packet sent
 
 ##### session:send_raw(format, ...)
 
@@ -336,15 +378,27 @@ Triggered upon receipt of an unknown non-numeric message. Parameters depend on t
 Triggered upon receipt of any numeric message from the server (see RFC 1429 for an incomplete list).
 Parameters depend on the message.
 
-#### DCC events
-
 ##### SEND
 
 Triggered upon receipt of a DCC SEND request.
 
+Parameters:
+
+- user's nick
+- user's IP address
+- filename
+- filesize
+- DCC id (see session.dcc_accept and session.dcc_decline)
+
 ##### CHAT
 
 Triggered upon receipt of a DCC CHAT request.
+
+Parameters:
+
+- user's nick
+- user's IP address
+- DCC id (see session.dcc_accept and session.dcc_decline)
 
 ### Options
 
@@ -372,7 +426,7 @@ An invalid argument was provided to a function (If this happens, there's a bug i
 
 ##### errors.RESOLV
 
-The hostname provided to [session.connect](#sessionconnect) could not be resolved into a valid IP address.
+The hostname provided to [session.connect](#sessionconnectargs) could not be resolved into a valid IP address.
 
 ##### errors.SOCKET
 
