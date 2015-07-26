@@ -11,9 +11,9 @@ is the name of the corresponding pkg-config file.
 
 ## Usage
 
-Full documentation is provided in [doc/ircclient.md](blob/master/doc/ircclient.md). The
+Full documentation is provided in [doc/ircclient.md](doc/ircclient.md). The
 [libircclient docs](http://www.ulduzsoft.com/libircclient/) may also be helpful.
 
 ## Licence
 
-See [LICENCE](blob/master/LICENCE).
+See [LICENCE](LICENCE).
