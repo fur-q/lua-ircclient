@@ -8,7 +8,7 @@ Returns the libircclient version major and minor version numbers.
 
 ##### strerror(err)
 
-Returns a string description of the [libircclient error](#errors) *err*.
+Returns a string description of the [error](#errors) *err*.
 
 ##### get_nick(mask)
 
@@ -24,11 +24,13 @@ Strips all mIRC formatting from *msg* and returns the stripped message.
 
 ##### color_convert_to_mirc()
 
-Converts libircclient's internal formatting codes in *msg* to mIRC formatting and returns the converted message.
+Converts libircclient's internal formatting codes in *msg* to mIRC formatting, and returns the
+converted message.
 
 ##### color_convert_from_mirc(msg)
 
-Converts mIRC formatting codes in *msg* to libircclient's internal formatting and returns the converted message.
+Converts mIRC formatting codes in *msg* to libircclient's internal formatting, and returns the
+converted message.
 
 ##### create_session()
 
@@ -36,14 +38,14 @@ Creates and returns a new IRC session.
 
 ### Session functions
 
-Unless otherwise specified, all session functions return *true* on success, and *nil, error* on
+Unless otherwise specified, all session functions return *true* on success, and *nil, [error](#errors)* on
 failure.
 
 If a function returns *true*, it means the command was sent to the server. You must [register a
 handler](#sessionregisterevt-callback) for the appropriate events to find out if the command was
-successful. For example, when joining a channel, a *JOIN* event will be fired on success, a *474*
-event will be fired if you are banned from the channel, a *475* event will be fired if you have
-provided the wrong key, et cetera.
+successful. For example, when joining a channel, a [JOIN](#eventsjoin) event will be triggered on success, a
+*474* event will be triggered if you are banned from the channel, a *475* event will be triggered if
+you have provided the wrong key, et cetera.
 
 ##### session:connect(args)
 
@@ -89,11 +91,11 @@ descriptors in the table *wfd*. See examples/epoll.lua for sample usage.
 
 ##### session:option_set(opt)
 
-Sets the [libircclient option](#options) *opt*.
+Sets the [option](#options) *opt*.
 
 ##### session:option_reset(opt)
 
-Resets the [libircclient option](#options) *opt* to its default value.
+Resets the [option](#options) *opt* to its default value.
 
 ##### session:join(chan, key)
 
@@ -168,10 +170,10 @@ Quit IRC with optional reason *reason*.
 
 Accept the DCC CHAT or DCC SEND request *id*.
 
-*callback* is a function which will be triggered upon receipt of DCC events. It takes the
-following parameters:
+*callback* is a function which will be triggered upon receipt of DCC events. It takes the following
+parameters:
 
-- **status**: *true* if no error, otherwise [libircclient error](#errors) 
+- **status**: *true* if successful, otherwise *[error](#errors)*
 - **length**: the length of *data* 
 - **data**: for DCC CHAT, a DCC CHAT message; for DCC SEND, a portion of the received file
 
@@ -181,13 +183,13 @@ Decline the DCC CHAT or DCC SEND request *id*.
 
 ##### session:dcc_chat(nick, callback)
 
-Send a DCC CHAT request to *nick*. Returns the DCC session ID on success, or *nil, error* on
+Send a DCC CHAT request to *nick*. Returns the DCC session ID on success, or *nil, [error](#errors)* on
 failure.
 
 *callback* is a function which will be triggered upon receipt of DCC CHAT messages. It takes the
 following parameters:
 
-- **status**: *true* if no error, otherwise [libircclient error](#errors) 
+- **status**: *true* if successful, otherwise *[error](#errors)*
 - **length**: the length of the message
 - **data**: the message
 
@@ -200,10 +202,10 @@ Send a DCC CHAT message.
 Send a DCC SEND request to *nick* for the file *filename*. Returns the DCC session ID on success, or
 *nil, error* on failure. 
 
-*callback* is a function which will be triggered after a successfully sent packet or an error. It takes the
-following parameters:
+*callback* is a function which will be triggered after a successfully sent packet or an error. It
+takes the following parameters:
 
-- **status**: *true* if no error, otherwise [libircclient error](#errors) 
+- **status**: *true* if successful, otherwise *[error](#errors)*
 - **length**: the length of the packet sent
 
 ##### session:send_raw(format, ...)
@@ -388,7 +390,8 @@ Parameters:
 - user's IP address
 - filename
 - filesize
-- DCC id (see session.dcc_accept and session.dcc_decline)
+- DCC id (see [session.dcc_accept](#sessiondcc_acceptid-callback) and
+  [session.dcc_decline](#sessiondcc_declineid))
 
 ##### CHAT
 
@@ -398,7 +401,8 @@ Parameters:
 
 - user's nick
 - user's IP address
-- DCC id (see session.dcc_accept and session.dcc_decline)
+- DCC id (see [session.dcc_accept](#sessiondcc_acceptid-callback) and
+  [session.dcc_decline](#sessiondcc_declineid))
 
 ### Options
 
@@ -406,11 +410,12 @@ Options are provided in the *ircclient.options* table.
 
 ##### options.DEBUG
 
-If set, and if libircclient is compiled with debug symbols, send additional debug information to STDOUT.
+If set, and if libircclient is compiled with debug symbols, send additional debug information to
+STDOUT.
 
 ##### options.STRIPNICKS
 
-If set, automatically strip the host part of IRC masks passed to callbacks (i.e. get_nick).
+If set, automatically strip the host part of IRC masks passed to callbacks.
 
 ##### options.SSL_NO_VERIFY
 
@@ -422,11 +427,12 @@ Errors are provided in the *ircclient.errors* table.
 
 ##### errors.INVAL
 
-An invalid argument was provided to a function (If this happens, there's a bug in the bindings).
+An invalid argument was provided to a function (if this happens, there's a bug in the bindings).
 
 ##### errors.RESOLV
 
-The hostname provided to [session.connect](#sessionconnectargs) could not be resolved into a valid IP address.
+The hostname provided to [session.connect](#sessionconnectargs) could not be resolved into a valid
+IP address.
 
 ##### errors.SOCKET
 
@@ -450,7 +456,7 @@ A DCC chat or DCC send connection could not be accepted.
 
 ##### errors.NODCCSEND
 
-A filename supplied to *session.dcc_sendfile* could not be sent.
+A filename supplied to [session.dcc_sendfile](#sessiondcc_acceptid-callback) could not be sent.
 
 ##### errors.READ
 
@@ -471,7 +477,7 @@ A DCC request timed out.
 
 ##### errors.OPENFILE
 
-The file specified in *session.dcc_sendfile* could not be opened.
+The file specified in [session.dcc_sendfile](#sessiondcc_acceptid-callback) could not be opened.
 
 ##### errors.TERMINATED
 
@@ -479,7 +485,7 @@ An IRC server connection was terminated.
 
 ##### errors.NOIPV6
 
-A function which requires IPv6 support was called, but libircclient was not compiled with IPv6 
+A function which requires IPv6 support was called, but libircclient was not compiled with IPv6
 support.
 
 ##### errors.SSL_NOT_SUPPORTED

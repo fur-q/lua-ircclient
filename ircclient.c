@@ -177,8 +177,7 @@ static void cb_dcc(irc_session_t * session, irc_dcc_t id, int status, void * ctx
         lua_pushlstring(L, data, length);
     else
         lua_pushnil(L);
-    int ok = lua_pcall(L, 3, 0, 0);
-    if (ok) {
+    if (lua_pcall(L, 3, 0, 0)) {
         // FIXME do something with this error
         lua_pop(L, 1);
     }
@@ -362,8 +361,9 @@ static int session_send_raw(lua_State * L) {
     lua_getfield(L, 3, "format");
     lua_insert(L, 2);
     lua_pop(L, 1);
-    lua_pcall(L, lua_gettop(L) - 1, 1, 0);
-    const char * msg = luaL_checkstring(L, 2);
+    if (lua_pcall(L, lua_gettop(L) - 1, 1, 0))
+        return lua_error(L);
+    const char * msg = lua_tostring(L, 2);
     return STATUS(irc_send_raw(session, msg));
 }
 
@@ -395,8 +395,7 @@ static int session_dcc_chat(lua_State * L) {
     const char * nick = luaL_checkstring(L, 2);
     luaL_checktype(L, 3, LUA_TFUNCTION);
     irc_dcc_t id = 0;
-    int ok = irc_dcc_chat(session, 0, nick, cb_dcc, &id);
-    if (ok) {
+    if (irc_dcc_chat(session, 0, nick, cb_dcc, &id)) {
         lua_pushnil(L);
         lua_pushinteger(L, irc_errno(session));
         return 2;
@@ -419,8 +418,7 @@ static int session_dcc_sendfile(lua_State * L) {
     const char * file = luaL_checkstring(L, 3);
     luaL_checktype(L, 4, LUA_TFUNCTION);
     irc_dcc_t id = 0;
-    int ok = irc_dcc_sendfile(session, 0, nick, file, cb_dcc, &id);
-    if (ok) {
+    if (irc_dcc_sendfile(session, 0, nick, file, cb_dcc, &id)) {
         lua_pushnil(L);
         lua_pushinteger(L, irc_errno(session));
         return 2;
@@ -518,7 +516,8 @@ static int session_set_callback(lua_State * L) {
     lua_getglobal(L, "string");
     lua_getfield(L, -1, "upper");
     lua_pushvalue(L, 2);
-    lua_pcall(L, 1, 1, 0);
+    if (lua_pcall(L, 1, 1, 0))
+        return lua_error(L);
     lua_pushvalue(L, 3);
     lua_settable(L, 5);
     return 0;
