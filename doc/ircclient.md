@@ -1,4 +1,4 @@
-# lua-ircclient
+# lua-ircclient documentation
 
 ### The ircclient module
 
@@ -38,14 +38,14 @@ Creates and returns a new IRC session.
 
 ### Session functions
 
-Unless otherwise specified, all session functions return *true* on success, and *nil, [error](#errors)* on
-failure.
+Unless otherwise specified, all session functions return *true* on success, and *nil,
+[error](#errors)* on failure.
 
 If a function returns *true*, it means the command was sent to the server. You must [register a
 handler](#sessionregisterevt-callback) for the appropriate events to find out if the command was
-successful. For example, when joining a channel, a [JOIN](#eventsjoin) event will be triggered on success, a
-*474* event will be triggered if you are banned from the channel, a *475* event will be triggered if
-you have provided the wrong key, et cetera.
+successful. For example, when joining a channel, a [JOIN](#join) event will be triggered on success,
+a *474* event will be triggered if you are banned from the channel, a *475* event will be triggered
+if you have provided the wrong key, et cetera.
 
 ##### session:connect(args)
 
@@ -69,13 +69,13 @@ Returns *true* if the session is connected to a server, and *false* if not.
 
 ##### session:register(evt, callback)
 
-Register the function *callback* for the event *evt*. 
+Registers the function *callback* for the event *evt*. 
 
 See [events](#events) for a list of events and callback function parameters.
 
 ##### session:run()
 
-Enter the main loop. This function will not return until the connection is terminated, either
+Enters the main loop. This function will not return until the connection is terminated, either
 remotely or by calling [session.quit](#sessionquitreason). To use a different main loop, see
 [session.add_descriptors](#sessionadd_descriptorsrfd-wfd).
 
@@ -111,24 +111,24 @@ Invites the user *nick* to the channel *chan*.
 
 ##### session:names(chan)
 
-Request a list of nicknames on the channel *chan*.
+Requests a list of nicknames on the channel *chan*.
 
 ##### session:list(chan)
 
-Request a list of channels. *chan* may contain a comma-separated list of channel names to search
+Requests a list of channels. *chan* may contain a comma-separated list of channel names to search
 for.
 
 ##### session:topic(chan, topic)
 
-If *topic* is set, set the topic on *chan*; otherwise, request the topic on *chan*.
+If *topic* is set, sets the topic on *chan*; otherwise, requests the topic on *chan*.
 
 ##### session:channel_mode(chan, mode)
 
-If *mode* is set, set the modes on *chan*; otherwise, request the current channel modes on *chan*.
+If *mode* is set, sets the modes on *chan*; otherwise, requests the current channel modes on *chan*.
 
 ##### session:user_mode(mode)
 
-If *mode* is set, set the modes on yourself; otherwise, request your current user modes.
+If *mode* is set, sets the modes on yourself; otherwise, requests your current user modes.
 
 ##### session:kick(nick, chan, reason)
 
@@ -136,39 +136,44 @@ Kicks *nick* from *chan* with optional *reason*.
 
 ##### session:msg(target, msg)
 
-Send the message *msg* to the user or channel *target*.
+Sends the message *msg* to the user or channel *target*.
 
 ##### session:me(target, msg)
 
-Send a CTCP ACTION message *msg* to the user or channel *target*.
+Sends a CTCP ACTION message *msg* to the user or channel *target*.
 
 ##### session:notice(target, msg)
 
-Send the notice *msg* to the user or channel *target*.
+Sends the notice *msg* to the user or channel *target*.
 
 ##### session:ctcp_request(nick, req)
 
-Send the CTCP request *req* to *nick*.
+Sends the CTCP request *req* to *nick*.
 
 ##### session:ctcp_reply(nick, rep)
 
-Send the CTCP reply *rep* to *nick*.
+Sends the CTCP reply *rep* to *nick*.
 
 ##### session:nick(newnick)
 
-Change your nick to *newnick*.
+Changes your nick to *newnick*.
 
 ##### session:whois(nick)
 
-Request whois information on *nick*, which may be a nick or a comma-separated list of nicks.
+Requests whois information on *nick*, which may be a nick or a comma-separated list of nicks.
 
 ##### session:quit(reason)
 
-Quit IRC with optional reason *reason*.
+Disconnects from the IRC server, with the optional reason *reason*.
 
-##### session:dcc_accept(id, callback)
+##### session:send_raw(format, ...)
 
-Accept the DCC CHAT or DCC SEND request *id*.
+Send raw data to the IRC server, e.g. a command not supported by the library. The arguments are the
+same as for *string.format*.
+
+##### session:dcc_accept(dccid, callback)
+
+Accepts the DCC CHAT or DCC SEND request *dccid*.
 
 *callback* is a function which will be triggered upon receipt of DCC events. It takes the following
 parameters:
@@ -177,14 +182,14 @@ parameters:
 - **length**: the length of *data* 
 - **data**: for DCC CHAT, a DCC CHAT message; for DCC SEND, a portion of the received file
 
-##### session:dcc_decline(id)
+##### session:dcc_decline(dccid)
 
-Decline the DCC CHAT or DCC SEND request *id*.
+Declines the DCC CHAT or DCC SEND request *dccid*.
 
 ##### session:dcc_chat(nick, callback)
 
-Send a DCC CHAT request to *nick*. Returns the DCC session ID on success, or *nil, [error](#errors)* on
-failure.
+Sends a DCC CHAT request to *nick*. Returns the DCC session ID on success, or *nil,
+[error](#errors)* on failure.
 
 *callback* is a function which will be triggered upon receipt of DCC CHAT messages. It takes the
 following parameters:
@@ -193,25 +198,20 @@ following parameters:
 - **length**: the length of the message
 - **data**: the message
 
-##### session:dcc_msg(id, msg)
+##### session:dcc_msg(dccid, msg)
 
-Send a DCC CHAT message.
+Sends the message *msg* to the DCC CHAT session *dccid*.
 
 ##### session:dcc_sendfile(nick, filename, callback)
 
-Send a DCC SEND request to *nick* for the file *filename*. Returns the DCC session ID on success, or
-*nil, error* on failure. 
+Sends a DCC SEND request to *nick* for the file *filename*. Returns the DCC session ID on success,
+or *nil, [error](#errors)* on failure. 
 
 *callback* is a function which will be triggered after a successfully sent packet or an error. It
 takes the following parameters:
 
 - **status**: *true* if successful, otherwise *[error](#errors)*
 - **length**: the length of the packet sent
-
-##### session:send_raw(format, ...)
-
-Send raw data to the IRC server, e.g. a command not supported by the library. The arguments are the
-same as for *string.format*.
 
 ### Events
 
@@ -229,7 +229,7 @@ Any additional parameters are specified for each event.
 
 ##### CONNECT
 
-Generated when the session connects to the IRC server.
+Triggered when the session connects to the IRC server.
 
 ##### NICK
 
@@ -419,7 +419,7 @@ If set, automatically strip the host part of IRC masks passed to callbacks.
 
 ##### options.SSL_NO_VERIFY
 
-If set, do not verify server SSL certificates.
+If set, do not verify server SSL certificates (e.g. for self-signed certificates).
 
 ### Errors
 
@@ -427,7 +427,9 @@ Errors are provided in the *ircclient.errors* table.
 
 ##### errors.INVAL
 
-An invalid argument was provided to a function (if this happens, there's a bug in the bindings).
+An invalid argument was provided to a function.
+
+This error should never occur when using the bindings. If it does, report it as a bug.
 
 ##### errors.RESOLV
 
