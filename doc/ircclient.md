@@ -24,12 +24,12 @@ Strips all mIRC formatting from *msg* and returns the stripped message.
 
 ##### color_convert_to_mirc()
 
-Converts libircclient's internal formatting codes in *msg* to mIRC formatting, and returns the
+Converts libircclient's internal formatting codes in *msg* to mIRC formatting and returns the
 converted message.
 
 ##### color_convert_from_mirc(msg)
 
-Converts mIRC formatting codes in *msg* to libircclient's internal formatting, and returns the
+Converts mIRC formatting codes in *msg* to libircclient's internal formatting and returns the
 converted message.
 
 ##### create_session()
@@ -38,26 +38,28 @@ Creates and returns a new IRC session.
 
 ### Session functions
 
-Unless otherwise specified, all session functions return *true* on success, and *nil,
+Unless otherwise specified, all session functions return *true* on success or *nil,
 [error](#errors)* on failure.
 
-If a function returns *true*, it means the command was sent to the server. You must [register a
-handler](#sessionregisterevt-callback) for the appropriate events to find out if the command was
-successful. For example, when joining a channel, a [JOIN](#join) event will be triggered on success,
-a *474* event will be triggered if you are banned from the channel, a *475* event will be triggered
-if you have provided the wrong key, et cetera.
+If a function returns *true*, it means the command was sent to the server. An [event
+handler](#sessionregisterevt-callback) must be registered for the appropriate events to find out if
+the command was successful.
+
+For example, when joining a channel, a [JOIN](#join) event will be triggered on success, a *474*
+event will be triggered if you are banned from the channel, a *475* event will be triggered if you
+have provided the wrong key, and so forth.
 
 ##### session:connect(args)
 
 Connects the session to the given server. *args* is a table with the following fields:
 
 - **host**: the server address
-- **port**: the server port (optional, defaults to 6667)
+- **port**: the server port (optional, default: *6667*)
 - **nick**: the session's nickname
-- **user**: the session's ident (optional, defaults to the same as nick)
-- **realname**: the session's real name, shown in whois (optional, defaults to the same as nick)
+- **user**: the session's ident (optional, default: same as nick)
+- **realname**: the session's real name, shown in whois (optional, default: same as nick)
 - **password**: the server's password (optional)
-- **ipv6**: if true, connect via IPv6 (optional, defaults to false)
+- **ipv6**: if *true*, connect via IPv6 (optional, default: *false*)
 
 ##### session:disconnect()
 
@@ -120,15 +122,15 @@ for.
 
 ##### session:topic(chan, topic)
 
-If *topic* is set, sets the topic on *chan*; otherwise, requests the topic on *chan*.
+If *topic* is set, sets the topic on *chan*. Otherwise, requests the topic on *chan*.
 
 ##### session:channel_mode(chan, mode)
 
-If *mode* is set, sets the modes on *chan*; otherwise, requests the current channel modes on *chan*.
+If *mode* is set, sets the modes on *chan*. Otherwise, requests the current channel modes on *chan*.
 
 ##### session:user_mode(mode)
 
-If *mode* is set, sets the modes on yourself; otherwise, requests your current user modes.
+If *mode* is set, sets the modes on yourself. Otherwise, requests your current user modes.
 
 ##### session:kick(nick, chan, reason)
 
@@ -454,7 +456,7 @@ Either no memory could be allocated (which is usually a fatal error) or the comm
 
 ##### errors.ACCEPT
 
-A DCC chat or DCC send connection could not be accepted.
+An incoming DCC CHAT or DCC SEND connection could not be accepted.
 
 ##### errors.NODCCSEND
 
@@ -483,7 +485,7 @@ The file specified in [session.dcc_sendfile](#sessiondcc_acceptid-callback) coul
 
 ##### errors.TERMINATED
 
-An IRC server connection was terminated.
+The IRC server connection was terminated.
 
 ##### errors.NOIPV6
 

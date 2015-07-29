@@ -361,8 +361,7 @@ static int session_send_raw(lua_State * L) {
     lua_getfield(L, 3, "format");
     lua_insert(L, 2);
     lua_pop(L, 1);
-    if (lua_pcall(L, lua_gettop(L) - 1, 1, 0))
-        return lua_error(L);
+    lua_call(L, lua_gettop(L) - 1, 1);
     const char * msg = lua_tostring(L, 2);
     return STATUS(irc_send_raw(session, msg));
 }
@@ -516,8 +515,7 @@ static int session_set_callback(lua_State * L) {
     lua_getglobal(L, "string");
     lua_getfield(L, -1, "upper");
     lua_pushvalue(L, 2);
-    if (lua_pcall(L, 1, 1, 0))
-        return lua_error(L);
+    lua_call(L, 1, 1);
     lua_pushvalue(L, 3);
     lua_settable(L, 5);
     return 0;
