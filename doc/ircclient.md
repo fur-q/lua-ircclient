@@ -117,8 +117,8 @@ Requests a list of nicknames on the channel *chan*.
 
 ##### session:list(chan)
 
-Requests a list of channels. *chan* may contain a comma-separated list of channel names to search
-for.
+Requests a list of channels. *chan* may optionally contain a comma-separated list of channel names
+to search for.
 
 ##### session:topic(chan, topic)
 
@@ -229,13 +229,24 @@ following:
 
 Any additional parameters are specified for each event.
 
+##### ERROR
+
+Triggered when an error is thrown by a callback function. By default, this is set to *print*.
+
+If there is an error in the error handling function, an unhandled error will be thrown.
+
+Parameters:
+
+- the error
+
 ##### CONNECT
 
 Triggered when the session connects to the IRC server.
 
 ##### NICK
 
-Triggered when a user in one of the channels you have joined (including you) changes their nick.
+Triggered when a user in one of the channels you have joined (including yourself) changes their
+nick.
 
 Additional parameters:
 

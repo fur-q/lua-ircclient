@@ -106,8 +106,9 @@ static void cb_event(irc_session_t * session, const char * evt_s, unsigned int e
     for (int i = 0; i < count; i++)
         lua_pushstring(L, params[i]);
     if (lua_pcall(L, count+2, 0, 0)) {
-        // FIXME do something with this error
-        lua_pop(L, 1);
+        lua_getfield(L, -2, "ERROR");
+        lua_insert(L, -2);
+        lua_call(L, 1, 0);
     }
     lua_pop(L, 4);
 }
@@ -132,8 +133,9 @@ static void cb_event_dcc(irc_session_t * session, const char * evt, const char *
         lua_pushinteger(L, size);
     lua_pushinteger(L, id);
     if (lua_pcall(L, lua_gettop(L) - top, 0, 0)) {
-        // FIXME do something with this error
-        lua_pop(L, 1);
+        lua_getfield(L, -2, "ERROR");
+        lua_insert(L, -2);
+        lua_call(L, 1, 0);
     }
     lua_pop(L, 4);
 }
@@ -178,8 +180,11 @@ static void cb_dcc(irc_session_t * session, irc_dcc_t id, int status, void * ctx
     else
         lua_pushnil(L);
     if (lua_pcall(L, 3, 0, 0)) {
-        // FIXME do something with this error
-        lua_pop(L, 1);
+        lua_getfield(L, -3, "events");
+        lua_getfield(L, -1, "ERROR");
+        lua_pushvalue(L, -3);
+        lua_call(L, 1, 0);
+        lua_pop(L, 2);
     }
     if (status) {
         lua_pushnil(L);
@@ -530,32 +535,6 @@ static int session_destroy(lua_State * L) {
 }
 
 static int session_create(lua_State * L) {
-    irc_callbacks_t cbx = {
-        cb_eventname, cb_eventname, cb_eventname, cb_eventname, cb_eventname, cb_eventname, 
-        cb_eventname, cb_eventname, cb_eventname, cb_eventname, cb_eventname, cb_eventname, 
-        cb_eventname, cb_eventname, cb_eventname, cb_eventname, cb_eventname, cb_eventname, 
-        cb_eventcode, cb_event_chat, cb_event_send
-    };
-    struct lsession * ls = lua_newuserdata(L, sizeof(struct lsession *));
-    ls->session = irc_create_session(&cbx);
-    if (!ls->session) {
-        lua_pushnil(L);
-        lua_pushstring(L, irc_strerror(irc_errno(0))); // ??
-        return 2;
-    }
-    // set context
-    int tag = lua_tonumber(L, lua_upvalueindex(1));
-    struct cb_ctx * cb = malloc(sizeof(struct cb_ctx));
-    cb->L = L;
-    cb->ref = tag;
-    irc_set_ctx(ls->session, (void *)cb);
-    // set session context entry
-    lua_rawgeti(L, LUA_REGISTRYINDEX, tag);
-    lua_pushlightuserdata(L, (void *)cb);
-    lua_pushvalue(L, 1);
-    lua_rawset(L, -3);
-    lua_pop(L, 1);
-    // set metatable
     static const luaL_Reg ircsession[] = {
         { "connect", session_connect },
         { "disconnect", session_disconnect },
@@ -593,6 +572,32 @@ static int session_create(lua_State * L) {
         { "register", session_set_callback },
         { NULL, NULL }
     };
+    irc_callbacks_t cbx = {
+        cb_eventname, cb_eventname, cb_eventname, cb_eventname, cb_eventname, cb_eventname, 
+        cb_eventname, cb_eventname, cb_eventname, cb_eventname, cb_eventname, cb_eventname, 
+        cb_eventname, cb_eventname, cb_eventname, cb_eventname, cb_eventname, cb_eventname, 
+        cb_eventcode, cb_event_chat, cb_event_send
+    };
+    struct lsession * ls = lua_newuserdata(L, sizeof(struct lsession *));
+    ls->session = irc_create_session(&cbx);
+    if (!ls->session) {
+        lua_pushnil(L);
+        lua_pushstring(L, irc_strerror(irc_errno(0))); // ??
+        return 2;
+    }
+    // set context
+    int tag = lua_tonumber(L, lua_upvalueindex(1));
+    struct cb_ctx * cb = malloc(sizeof(struct cb_ctx));
+    cb->L = L;
+    cb->ref = tag;
+    irc_set_ctx(ls->session, (void *)cb);
+    // set session context entry
+    lua_rawgeti(L, LUA_REGISTRYINDEX, tag);
+    lua_pushlightuserdata(L, (void *)cb);
+    lua_pushvalue(L, 1);
+    lua_rawset(L, -3);
+    lua_pop(L, 1);
+    // set metatable
     luaL_newmetatable(L, "irc_session");
     lua_newtable(L);
     REGISTER(L, ircsession);
@@ -604,8 +609,11 @@ static int session_create(lua_State * L) {
     lua_pushboolean(L, 0);
     lua_setfield(L, -2, "__metatable");
     lua_setmetatable(L, -2);
+    // set uservalue
     lua_newtable(L);
     lua_newtable(L);
+    lua_getglobal(L, "print");
+    lua_setfield(L, -2, "ERROR");
     lua_setfield(L, -2, "events");
     lua_newtable(L);
     lua_setfield(L, -2, "dcc");
