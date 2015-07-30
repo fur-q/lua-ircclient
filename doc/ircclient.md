@@ -217,8 +217,9 @@ takes the following parameters:
 
 ### Events
 
-Events are registered with [session.register](#sessionregisterevt-callback) and called when the
-corresponding event is received from the IRC server.
+Event handlers are registered with [session.register](#sessionregisterevt-callback) and called when
+the corresponding event is received from the IRC server. Only one handler may be registered for each
+event.
 
 Unless otherwise specified, the first two parameters to the callback function are always the
 following: 
@@ -233,7 +234,7 @@ Any additional parameters are specified for each event.
 
 Triggered when an error is thrown by a callback function. By default, this is set to *print*.
 
-If there is an error in the error handling function, an unhandled error will be thrown.
+If there is an error in the error handler, a fatal (unhandled) error will be thrown.
 
 Parameters:
 
