@@ -5,8 +5,8 @@ LUAVER  ?= 5.2
 LUAPC   ?= lua$(LUAVER)
 
 CPPFLAGS := -std=c99 -Wall -pedantic -fPIC `$(PKGCONF) --cflags $(LUAPC)`
-LDFLAGS  += -shared
-LDADD    := -lircclient
+LDFLAGS  ?= -shared
+LDADD    ?= -lircclient
 
 PREFIX ?= /usr/local
 LIBDIR := $(PREFIX)/lib/lua/$(LUAVER)
@@ -21,7 +21,6 @@ $(LIBNAME): ircclient.c
 install: $(LIBNAME)
 	mkdir -p $(LIBDIR)
 	cp $(LIBNAME) $(LIBDIR)
-
 
 clean:
 	$(RM) $(LIBNAME)
