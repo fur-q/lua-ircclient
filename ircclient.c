@@ -103,7 +103,7 @@ static void cb_event(irc_session_t * session, const char * evt_s, unsigned int e
     }
     lua_pushvalue(L, -4);
     lua_pushstring(L, origin);
-    for (int i = 0; i < count; i++)
+    for (unsigned int i = 0; i < count; i++)
         lua_pushstring(L, params[i]);
     if (lua_pcall(L, count+2, 0, 0)) {
         lua_getfield(L, -2, "ERROR");
