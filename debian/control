@@ -1,0 +1,17 @@
+Source: lua-ircclient
+Section: interpreters
+Priority: optional
+Maintainer: Fur Q <furq@b23.be>
+Build-Depends: debhelper (>= 9), libircclient-dev
+Standards-Version: 3.9.3
+Homepage: http://github.com/fur-q/lua-ircclient
+Vcs-Browser: http://github.com/fur-q/lua-ircclient
+
+Package: lua-ircclient
+Architecture: any
+Multi-Arch: same
+Pre-Depends: multiarch-support
+Depends: ${shlibs:Depends}, ${misc:Depends}, libircclient1
+Provides: ${lua:Provides}
+XB-Lua-Versions: ${lua:Versions}
+Description: Lua bindings to libircclient
