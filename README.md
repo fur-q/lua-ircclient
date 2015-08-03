@@ -11,9 +11,10 @@ package, then `dpkg -i lua-ircclient_VERSION.deb` to install it.
 
 On anything else, use the provided Makefile. There are three variables you may need to change:
 
-`LUAVER` - your target Lua version. Should be `5.1` or `5.2`.
-`LUAPC` - the name of your system's pkg-config or pkgconf file for Lua. Defaults to `lua$(LUAVER)`.
-`PKGCONF` - the name of your system's pkg-config or pkgconf binary.
+- `LUAVER` - your target Lua version. Should be `5.1` or `5.2`.
+- `LUAPC` - the name of your system's pkg-config or pkgconf file for Lua. Defaults to
+  `lua$(LUAVER)`.
+- `PKGCONF` - the name of your system's pkg-config or pkgconf binary.
 
 The library should build with MinGW, but it is untested.
 
