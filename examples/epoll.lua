@@ -46,12 +46,10 @@ local cb = function(fd, evt)
 end
 
 while true do
-    local rfd1, wfd1 = s1:add_descriptors({}, {})
-    local rfd2, wfd2 = s2:add_descriptors({}, {})
-    addfd(rfd1, epoll.EPOLLIN)
-    addfd(rfd2, epoll.EPOLLIN)
-    addfd(wfd1, epoll.EPOLLOUT)
-    addfd(wfd2, epoll.EPOLLOUT)
+    local rfd, wfd = s1:add_descriptors({}, {})
+    s2:add_descriptors(rfd, wfd)
+    addfd(rfd, epoll.EPOLLIN)
+    addfd(wfd, epoll.EPOLLOUT)
     loop:wait_callback(cb, -1)
 end
 

@@ -19,9 +19,7 @@ s2:register("channel", function(s, origin, chan, text)
 end)
 s2:connect{ host = "127.0.0.1", nick = "test2" }
 
-local cq = cqueues.new()
-
-cq:wrap(function()
+local mainloop = function()
     while true do
         local rfd, wfd = s1:add_descriptors({}, {})
         s2:add_descriptors(rfd, wfd)
@@ -44,7 +42,9 @@ cq:wrap(function()
         s1:process_descriptors(rfd, wfd)
         s2:process_descriptors(rfd, wfd)
     end
-end)
+end
 
+local cq = cqueues.new()
+cq:wrap(mainloop)
 assert(cq:loop())
 
