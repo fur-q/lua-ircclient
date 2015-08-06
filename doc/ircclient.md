@@ -49,6 +49,12 @@ For example, when joining a channel, a [JOIN](#join) event will be triggered on 
 event will be triggered if you are banned from the channel, a *475* event will be triggered if you
 have provided the wrong key, and so forth.
 
+##### session:register(evt, callback)
+
+Registers the function *callback* for the event *evt*. 
+
+See [events](#events) for a list of events and callback function parameters.
+
 ##### session:connect(args)
 
 Connects the session to the given server. *args* is a table with the following fields:
@@ -68,36 +74,6 @@ Disconnects from the active server.
 ##### session:is_connected()
 
 Returns *true* if the session is connected to a server, and *false* if not.
-
-##### session:register(evt, callback)
-
-Registers the function *callback* for the event *evt*. 
-
-See [events](#events) for a list of events and callback function parameters.
-
-##### session:run()
-
-Enters the main loop. This function will not return until the connection is terminated, either
-remotely or by calling [session.quit](#sessionquitreason). To use a different main loop, see
-[session.add_descriptors](#sessionadd_descriptorsrfd-wfd).
-
-##### session:add_descriptors(rfd, wfd)
-
-Adds the session's readable file descriptors to the table *rfd* and writable file descriptors to the
-table *wfd*. See examples/epoll.lua for sample usage.
-
-##### session:process_descriptors(rfd, wfd)
-
-Processes the session's events on the readable file descriptors in the table *rfd* and writable file
-descriptors in the table *wfd*. See examples/epoll.lua for sample usage.
-
-##### session:option_set(opt)
-
-Sets the [option](#options) *opt*.
-
-##### session:option_reset(opt)
-
-Resets the [option](#options) *opt* to its default value.
 
 ##### session:join(chan, key)
 
@@ -214,6 +190,32 @@ takes the following parameters:
 
 - **status**: *true* if successful, otherwise *[error](#errors)*
 - **length**: the length of the packet sent
+
+##### session:option_set(opt)
+
+Sets the [option](#options) *opt*.
+
+##### session:option_reset(opt)
+
+Resets the [option](#options) *opt* to its default value.
+
+##### session:run()
+
+Enters the main loop. This function will not return until the connection is terminated, either
+remotely or by calling [session.quit](#sessionquitreason). To use a different main loop, see
+[session.add_descriptors](#sessionadd_descriptorsrfd-wfd).
+
+##### session:add_descriptors(rfd, wfd)
+
+Adds the session's readable file descriptors to the table *rfd* and writable file descriptors to the
+table *wfd*, and returns both tables. 
+
+##### session:process_descriptors(rfd, wfd)
+
+Processes the session's events on the readable file descriptors in the table *rfd* and writable file
+descriptors in the table *wfd*, and returns both tables. 
+
+See examples/epoll.lua or examples/cqueues.lua for sample usage.
 
 ### Events
 
