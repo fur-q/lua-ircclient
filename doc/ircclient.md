@@ -116,9 +116,13 @@ Kicks *nick* from *chan* with optional *reason*.
 
 Sends the message *msg* to the user or channel *target*.
 
-##### session:me(target, msg)
+##### session:ctcp_action(target, msg)
 
 Sends a CTCP ACTION message *msg* to the user or channel *target*.
+
+##### session:me(target, msg)
+
+Alias for [session.ctcp_action](#sessionctcpactiontarget-msg)
 
 ##### session:notice(target, msg)
 
@@ -149,20 +153,16 @@ Disconnects from the IRC server, with the optional reason *reason*.
 Send raw data to the IRC server, e.g. a command not supported by the library. The arguments are the
 same as for *string.format*.
 
-##### session:dcc_accept(dccid, callback)
+##### session:dcc_sendfile(nick, filename, callback)
 
-Accepts the DCC CHAT or DCC SEND request *dccid*.
+Sends a DCC SEND request to *nick* for the file *filename*. Returns the DCC session ID on success,
+or *nil, [error](#errors)* on failure. 
 
-*callback* is a function which will be triggered upon receipt of DCC events. It takes the following
-parameters:
+*callback* is a function which will be triggered after a successfully sent packet or an error. It
+takes the following parameters:
 
 - **status**: *true* if successful, otherwise *[error](#errors)*
-- **length**: the length of *data* 
-- **data**: for DCC CHAT, a DCC CHAT message; for DCC SEND, a portion of the received file
-
-##### session:dcc_decline(dccid)
-
-Declines the DCC CHAT or DCC SEND request *dccid*.
+- **length**: the length of the packet sent
 
 ##### session:dcc_chat(nick, callback)
 
@@ -180,16 +180,20 @@ following parameters:
 
 Sends the message *msg* to the DCC CHAT session *dccid*.
 
-##### session:dcc_sendfile(nick, filename, callback)
+##### session:dcc_accept(dccid, callback)
 
-Sends a DCC SEND request to *nick* for the file *filename*. Returns the DCC session ID on success,
-or *nil, [error](#errors)* on failure. 
+Accepts the DCC CHAT or DCC SEND request *dccid*.
 
-*callback* is a function which will be triggered after a successfully sent packet or an error. It
-takes the following parameters:
+*callback* is a function which will be triggered upon receipt of DCC events. It takes the following
+parameters:
 
 - **status**: *true* if successful, otherwise *[error](#errors)*
-- **length**: the length of the packet sent
+- **length**: the length of *data* 
+- **data**: for DCC CHAT, a DCC CHAT message; for DCC SEND, a portion of the received file
+
+##### session:dcc_decline(dccid)
+
+Declines the DCC CHAT or DCC SEND request *dccid*.
 
 ##### session:option_set(opt)
 
@@ -240,7 +244,7 @@ If there is an error in the error handler, a fatal (unhandled) error will be thr
 
 Parameters:
 
-- the error
+- error message
 
 ##### CONNECT
 
@@ -405,8 +409,8 @@ Parameters:
 - user's nick
 - user's IP address
 - filename
-- filesize
-- DCC id (see [session.dcc_accept](#sessiondcc_acceptid-callback) and
+- filesize (number)
+- DCC id (number: see [session.dcc_accept](#sessiondcc_acceptid-callback) and
   [session.dcc_decline](#sessiondcc_declineid))
 
 ##### CHAT
@@ -417,7 +421,7 @@ Parameters:
 
 - user's nick
 - user's IP address
-- DCC id (see [session.dcc_accept](#sessiondcc_acceptid-callback) and
+- DCC id (number: see [session.dcc_accept](#sessiondcc_acceptid-callback) and
   [session.dcc_decline](#sessiondcc_declineid))
 
 ### Options
@@ -439,7 +443,8 @@ If set, do not verify server SSL certificates (e.g. for self-signed certificates
 
 ### Errors
 
-Errors are provided in the *ircclient.errors* table.
+Errors are provided in the *ircclient.errors* table, which is indexed by error name and error
+number (i.e. `errors[errors.INVAL] == "INVAL"`).
 
 ##### errors.INVAL
 
@@ -458,11 +463,11 @@ A new socket could not be created or made nonblocking.
 
 ##### errors.CONNECT
 
-A socket could not connect to an IRC server or DCC client.
+A socket could not connect to an IRC server or DCC peer.
 
 ##### errors.CLOSED
 
-A connection was closed by an IRC server or DCC client.
+A connection was closed by an IRC server or DCC peer.
 
 ##### errors.NOMEM
 
@@ -495,7 +500,7 @@ A DCC request timed out.
 
 ##### errors.OPENFILE
 
-The file specified in [session.dcc_sendfile](#sessiondcc_acceptid-callback) could not be opened.
+A filename supplied to [session.dcc_sendfile](#sessiondcc_acceptid-callback) could not be opened.
 
 ##### errors.TERMINATED
 
