@@ -152,6 +152,27 @@ static inline irc_session_t * util_getsession(lua_State * L) {
     return ls->session;
 }
 
+static inline void util_addstr(lua_State * L, luaL_Buffer * buf, int idx) {
+    size_t len = 0;
+    const char * str = luaL_checklstring(L, idx, &len);
+    luaL_addlstring(buf, str, len);
+}
+
+static inline void util_concat(lua_State * L, int idx, char sep) {
+    int top = lua_gettop(L);
+    if (top <= idx)
+        return;
+    luaL_Buffer buf;
+    luaL_buffinit(L, &buf);
+    for (; idx < top; idx++) {
+        util_addstr(L, &buf, idx);
+        luaL_addchar(&buf, sep);
+    }
+    if (idx == top) 
+        util_addstr(L, &buf, idx);
+    luaL_pushresult(&buf);
+}
+
 static inline int util_pushstatus(lua_State * L, irc_session_t * session, int status) {
     if (status) {
         lua_pushnil(L);
@@ -219,12 +240,14 @@ static int session_cmd_invite(lua_State * L) {
 
 static int session_cmd_names(lua_State * L) {
     irc_session_t * session = util_getsession(L);
+    util_concat(L, 2, ',');
     const char * chan = luaL_checkstring(L, 2);
     return STATUS(irc_cmd_names(session, chan));
 }
 
 static int session_cmd_list(lua_State * L) {
     irc_session_t * session = util_getsession(L);
+    util_concat(L, 2, ',');
     const char * chan = luaL_optstring(L, 2, 0);
     return STATUS(irc_cmd_list(session, chan));
 }
@@ -298,9 +321,9 @@ static int session_cmd_nick(lua_State * L) {
     return STATUS(irc_cmd_nick(session, newnick));
 }
 
-// TODO concat multiple args
 static int session_cmd_whois(lua_State * L) {
     irc_session_t * session = util_getsession(L);
+    util_concat(L, 2, ',');
     const char * nick = luaL_checkstring(L, 2);
     return STATUS(irc_cmd_whois(session, nick));
 }
@@ -628,7 +651,7 @@ static int lib_color_convert_to_mirc(lua_State * L) {
 
 static inline void util_setconsts(lua_State * L, const struct strconst * list, const char * name) {
     lua_createtable(L, 0, sizeof list / sizeof *list);
-    for (unsigned int i = 0; list[i].name; i++) {
+    for (size_t i = 0; list[i].name; i++) {
         lua_pushinteger(L, list[i].val);
         lua_setfield(L, -2, list[i].name);
         lua_pushstring(L, list[i].name);
