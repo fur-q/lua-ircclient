@@ -121,7 +121,7 @@ Sends a CTCP ACTION message *msg* to the user or channel *target*.
 
 ##### session:me(target, msg)
 
-Alias for [session.ctcp_action](#sessionctcpactiontarget-msg)
+Alias for [session.ctcp_action](#sessionctcpactiontarget-msg).
 
 ##### session:notice(target, msg)
 
