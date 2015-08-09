@@ -87,14 +87,13 @@ Leaves the channel *chan*.
 
 Invites the user *nick* to the channel *chan*.
 
-##### session:names(chan)
+##### session:names(chan, ...)
 
-Requests a list of nicknames on the channel *chan*.
+Requests a list of nicknames on the channel *chan*. More than one channel may be specified.
 
-##### session:list(chan)
+##### session:list(...)
 
-Requests a list of channels. *chan* may optionally contain a comma-separated list of channel names
-to search for.
+Requests a list of channels on the network. A list of channel names to search for may be specified.
 
 ##### session:topic(chan, topic)
 
@@ -140,9 +139,9 @@ Sends the CTCP reply *rep* to *nick*.
 
 Changes your nick to *newnick*.
 
-##### session:whois(nick)
+##### session:whois(nick, ...)
 
-Requests whois information on *nick*, which may be a nick or a comma-separated list of nicks.
+Requests whois information on *nick*. More than one nick may be specified.
 
 ##### session:quit(reason)
 
