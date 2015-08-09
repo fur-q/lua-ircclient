@@ -1,3 +1,10 @@
+lua-ircclient (20150809-0) unstable; urgency=low
+
+  * session.list, session.names, session.whois now accept multiple arguments.
+  * Suppressed spurious unused argument warning at compile time.
+
+ --  Fur Q <furq@b23.be>  Sun, 09 Aug 2015 01:38:00 +0100
+
 lua-ircclient (20150730-0) unstable; urgency=low
 
   * Initial release.
