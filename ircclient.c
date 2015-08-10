@@ -705,7 +705,7 @@ int luaopen_ircclient(lua_State * L) {
     lua_setfield(L, -2, "__mode");
     lua_setmetatable(L, -2);
     int tag = luaL_ref(L, LUA_REGISTRYINDEX);
-    lua_createtable(L, 0, sizeof ircclient / sizeof *ircclient + 1);
+    lua_createtable(L, 0, sizeof ircclient / sizeof *ircclient);
     REGISTER(L, ircclient);
     lua_pushnumber(L, tag);
     lua_pushcclosure(L, session_create, 1);
