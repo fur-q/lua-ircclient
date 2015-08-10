@@ -121,7 +121,7 @@ Sends a CTCP ACTION message *msg* to the user or channel *target*.
 
 ##### session:me(target, msg)
 
-Alias for [session.ctcp_action](#sessionctcpactiontarget-msg).
+Alias for [session.ctcp_action](#sessionctcp_actiontarget-msg).
 
 ##### session:notice(target, msg)
 
@@ -226,14 +226,12 @@ Event handlers are registered with [session.register](#sessionregisterevt-callba
 the corresponding event is received from the IRC server. Only one handler may be registered for each
 event.
 
-Unless otherwise specified, the first two parameters to the callback function are always the
-following: 
+Unless otherwise specified, all parameters of the callback function are strings, and the first two
+parameters are: 
 
-- session: the session which triggered the callback
-- origin: the IRC mask (or nick, if [options.STRIPNICKS](#optionsstripnicks) is set) of the user who
+- the session which triggered the callback
+- the IRC mask (or nick if [options.STRIPNICKS](#optionsstripnicks) is set) of the user who
   triggered the event
-
-Any additional parameters are specified for each event.
 
 ##### ERROR
 
@@ -409,8 +407,8 @@ Parameters:
 - user's IP address
 - filename
 - filesize (number)
-- DCC id (number: see [session.dcc_accept](#sessiondcc_acceptid-callback) and
-  [session.dcc_decline](#sessiondcc_declineid))
+- DCC id (number: see [session.dcc_accept](#sessiondcc_acceptdccid-callback) and
+  [session.dcc_decline](#sessiondcc_declinedccid))
 
 ##### CHAT
 
@@ -420,8 +418,8 @@ Parameters:
 
 - user's nick
 - user's IP address
-- DCC id (number: see [session.dcc_accept](#sessiondcc_acceptid-callback) and
-  [session.dcc_decline](#sessiondcc_declineid))
+- DCC id (number: see [session.dcc_accept](#sessiondcc_acceptdccid-callback) and
+  [session.dcc_decline](#sessiondcc_declinedccid))
 
 ### Options
 
