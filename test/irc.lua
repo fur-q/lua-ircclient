@@ -23,6 +23,18 @@ local uv = (debug.getfenv or debug.getuservalue)(session)
 assert.equal(mt.__metatable, false)
 assert.type(uv.events, "table")
 assert.type(uv.dcc, "table")
+assert.equal(uv.error, print)
+session:set_error_handler(io.write)
+assert.equal(uv.error, io.write)
+
+local cb1, cb2 = function() return 1 end, function() return 2 end
+
+assert.equal(session:register("CONNECT", cb1), true)
+assert.equal(session:register("connect", cb2), true)
+assert.equal(session:register("connect", cb1), false)
+assert.equal(session:unregister("connect", cb1), true)
+assert.equal(session:unregister("connect", cb2), true)
+assert.equal(session:unregister("connect", cb1), false)
 
 if not getfenv then -- skip test on 5.1
     local _, ref = debug.getupvalue(irc.create_session, 1)
