@@ -1,3 +1,11 @@
+lua-ircclient (20150811-0) unstable; urgency=low
+
+  * session.register now allows setting multiple handlers per event.
+  * Added session.unregister to remove handlers.
+  * Added session.add_error_handler.
+
+ --  Fur Q <furq@b23.be>  Tue, 11 Aug 2015 22:10:23 +0100
+
 lua-ircclient (20150809-0) unstable; urgency=low
 
   * session.list, session.names, session.whois now accept multiple arguments.
