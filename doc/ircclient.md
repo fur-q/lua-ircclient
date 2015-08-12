@@ -51,9 +51,20 @@ have provided the wrong key, and so forth.
 
 ##### session:register(evt, callback)
 
-Registers the function *callback* for the event *evt*. 
+Registers the function *callback* for the event *evt*. Returns *true* if the function was
+registered, or *false* if it was already registered.
 
 See [events](#events) for a list of events and callback function parameters.
+
+##### session:unregister(evt, callback)
+
+Removes the function *callback* for the event *evt*. Returns *true* if the function was removed, or
+*false* if it was not already registered.
+
+##### session:set_error_handler(func)
+
+Sets the function *func* as the event error handler, which will be called whenever an error occurs
+in an event callback. By default, the error handler is **print**.
 
 ##### session:connect(args)
 
@@ -150,7 +161,7 @@ Disconnects from the IRC server, with the optional reason *reason*.
 ##### session:send_raw(format, ...)
 
 Send raw data to the IRC server, e.g. a command not supported by the library. The arguments are the
-same as for *string.format*.
+same as for **string.format**.
 
 ##### session:dcc_sendfile(nick, filename, callback)
 
@@ -232,16 +243,6 @@ parameters are:
 - the session which triggered the callback
 - the IRC mask (or nick if [options.STRIPNICKS](#optionsstripnicks) is set) of the user who
   triggered the event
-
-##### ERROR
-
-Triggered when an error is thrown by a callback function. By default, this is set to *print*.
-
-If there is an error in the error handler, a fatal (unhandled) error will be thrown.
-
-Parameters:
-
-- error message
 
 ##### CONNECT
 
