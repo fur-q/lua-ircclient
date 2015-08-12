@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <string.h>
 #include <lua.h>
 #include <lauxlib.h>
 #include <libircclient.h>
@@ -474,12 +473,12 @@ static int session_process_descriptors(lua_State * L) {
     FD_ZERO(&rfd);
     FD_ZERO(&wfd);
     lua_pushnil(L);
-    while (lua_next(L, 2) != 0) {
+    while (lua_next(L, 2)) {
         FD_SET(lua_tointeger(L, -1), &rfd);
         lua_pop(L, 1);
     }
     lua_pushnil(L);
-    while (lua_next(L, 3) != 0) {
+    while (lua_next(L, 3)) {
         FD_SET(lua_tointeger(L, -1), &wfd);
         lua_pop(L, 1);
     }
@@ -494,7 +493,7 @@ static inline void util_upper(lua_State * L, int idx) {
     lua_remove(L, -2);
 }
 
-static int session_set_callback(lua_State * L) {
+static int session_register(lua_State * L) {
     util_getsession(L);
     luaL_checktype(L, 2, LUA_TSTRING);
     luaL_checktype(L, 3, LUA_TFUNCTION);
@@ -524,7 +523,7 @@ static int session_set_callback(lua_State * L) {
     return 1;
 }
 
-static int session_remove_callback(lua_State * L) {
+static int session_unregister(lua_State * L) {
     int ok = 0;
     util_getsession(L);
     luaL_checktype(L, 2, LUA_TSTRING);
@@ -604,8 +603,8 @@ static int session_create(lua_State * L) {
         { "run", session_run },
         { "option_set", session_option_set },
         { "option_reset", session_option_reset },
-        { "register", session_set_callback },
-        { "unregister", session_remove_callback },
+        { "register", session_register },
+        { "unregister", session_unregister },
         { "set_error_handler", session_set_error_handler },
         { 0, 0 }
     };
@@ -639,7 +638,7 @@ static int session_create(lua_State * L) {
     lua_createtable(L, 0, sizeof ircsession / sizeof *ircsession);
     REGISTER(L, ircsession);
     lua_setfield(L, -2, "__index");
-    lua_pushcfunction(L, session_set_callback);
+    lua_pushcfunction(L, session_register);
     lua_setfield(L, -2, "__newindex");
     lua_pushcfunction(L, session_destroy);
     lua_setfield(L, -2, "__gc");
