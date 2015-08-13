@@ -477,7 +477,7 @@ An incoming DCC CHAT or DCC SEND connection could not be accepted.
 
 ##### errors.NODCCSEND
 
-A filename supplied to [session.dcc_sendfile](#sessiondcc_acceptid-callback) could not be sent.
+A filename supplied to [session.dcc_sendfile](#sessiondcc_sendfilenick-filename-callback) could not be sent.
 
 ##### errors.READ
 
