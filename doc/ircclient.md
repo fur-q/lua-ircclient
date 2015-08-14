@@ -63,8 +63,8 @@ Removes the function *callback* for the event *evt*. Returns *true* if the funct
 
 ##### session:set_error_handler(func)
 
-Sets the function *func* as the event error handler, which will be called whenever an error occurs
-in an event callback. By default, the error handler is **print**.
+Sets the function *func* as the session's error handler, which will be called when a Lua error
+occurs in an event callback. The default error handler is **print**. Returns no value.
 
 ##### session:connect(args)
 
@@ -80,7 +80,7 @@ Connects the session to the given server. *args* is a table with the following f
 
 ##### session:disconnect()
 
-Disconnects from the active server.
+Disconnects from the active server. Returns no value.
 
 ##### session:is_connected()
 
@@ -156,7 +156,7 @@ Requests whois information on *nick*. More than one nick may be specified.
 
 ##### session:quit(reason)
 
-Disconnects from the IRC server, with the optional reason *reason*.
+Disconnects from the IRC server with optional quit message *reason*.
 
 ##### session:send_raw(format, ...)
 
@@ -207,11 +207,11 @@ Declines the DCC CHAT or DCC SEND request *dccid*.
 
 ##### session:option_set(opt)
 
-Sets the [option](#options) *opt*.
+Sets the [option](#options) *opt*. Returns no value.
 
 ##### session:option_reset(opt)
 
-Resets the [option](#options) *opt* to its default value.
+Resets the [option](#options) *opt* to its default value. Returns no value.
 
 ##### session:run()
 
