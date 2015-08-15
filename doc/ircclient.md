@@ -234,8 +234,7 @@ See examples/epoll.lua or examples/cqueues.lua for sample usage.
 ### Events
 
 Event handlers are registered with [session.register](#sessionregisterevt-callback) and called when
-the corresponding event is received from the IRC server. Only one handler may be registered for each
-event.
+the corresponding event is received from the IRC server. 
 
 Unless otherwise specified, all parameters of the callback function are strings, and the first two
 parameters are: 
