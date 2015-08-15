@@ -53,7 +53,6 @@ static void cb_event(irc_session_t * session, const char * evt_s, unsigned int e
         lua_pop(L, 5);
         return;
     }
-    // 1 sessionlist 2 session 3 userval 4 events table 5 event table
     lua_pushnil(L);
     while (lua_next(L, -2)) {
         lua_pushvalue(L, -6);
@@ -445,13 +444,12 @@ static int session_add_descriptors(lua_State * L) {
     luaL_checktype(L, 3, LUA_TTABLE);
     int rfd_count = lua_rawlen(L, 2), wfd_count = lua_rawlen(L, 3);
     int max = 0;
+    int ok;
     fd_set rfd, wfd;
     FD_ZERO(&rfd);
     FD_ZERO(&wfd);
-    if (irc_add_select_descriptors(session, &rfd, &wfd, &max)) {
-        lua_pushnil(L);
-        return 1;
-    }
+    if ((ok = irc_add_select_descriptors(session, &rfd, &wfd, &max)))
+        return STATUS(ok);
     for (int i = 0; i <= max; i++) {
         if (FD_ISSET(i, &rfd)) {
             lua_pushinteger(L, i);
@@ -673,7 +671,7 @@ static int lib_strerror(lua_State * L) {
 
 static inline int util_target(lua_State * L, void (func)(const char *, char *, size_t)) {
     const char * origin = luaL_checkstring(L, 1);
-    unsigned int bufsize = luaL_optint(L, 2, 128);
+    size_t bufsize = luaL_optint(L, 2, 128);
     char buffer[bufsize];
     func(origin, buffer, bufsize);
     lua_pushstring(L, buffer);
