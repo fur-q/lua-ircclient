@@ -13,10 +13,6 @@
 #define lua_rawgetp(L, idx, ptr) lua_pushlightuserdata(L, ptr); lua_gettable(L, (idx) - 1)
 #endif
 
-struct lsession {
-    irc_session_t * session;
-};
-
 struct cb_ctx {
     lua_State * L;
     int ref;
@@ -150,8 +146,8 @@ static void cb_dcc(irc_session_t * session, irc_dcc_t id, int status, void * ctx
 /* SESSION FUNCTIONS */
 
 static inline irc_session_t * util_getsession(lua_State * L) {
-    struct lsession * ls = luaL_checkudata(L, 1, "irc_session");
-    return ls->session;
+    void ** ls = luaL_checkudata(L, 1, "irc_session");
+    return *ls;
 }
 
 static inline int util_pushstatus(lua_State * L, irc_session_t * session, int status) {
@@ -442,9 +438,8 @@ static int session_add_descriptors(lua_State * L) {
     irc_session_t * session = util_getsession(L);
     luaL_checktype(L, 2, LUA_TTABLE);
     luaL_checktype(L, 3, LUA_TTABLE);
-    int rfd_count = lua_rawlen(L, 2), wfd_count = lua_rawlen(L, 3);
-    int max = 0;
-    int ok;
+    size_t rfd_count = lua_rawlen(L, 2), wfd_count = lua_rawlen(L, 3);
+    int ok, max = 0;
     fd_set rfd, wfd;
     FD_ZERO(&rfd);
     FD_ZERO(&wfd);
@@ -612,9 +607,9 @@ static int session_create(lua_State * L) {
         cb_eventname, cb_eventname, cb_eventname, cb_eventname, cb_eventname, cb_eventname, 
         cb_eventcode, cb_event_chat, cb_event_send
     };
-    struct lsession * ls = lua_newuserdata(L, sizeof ls);
-    ls->session = irc_create_session(&cbx);
-    if (!ls->session) {
+    void ** ls = lua_newuserdata(L, sizeof ls);
+    *ls = irc_create_session(&cbx);
+    if (!*ls) {
         lua_pushnil(L);
         lua_pushstring(L, irc_strerror(irc_errno(0))); // ??
         return 2;
@@ -624,7 +619,7 @@ static int session_create(lua_State * L) {
     struct cb_ctx * cb = malloc(sizeof cb);
     cb->L = L;
     cb->ref = tag;
-    irc_set_ctx(ls->session, cb);
+    irc_set_ctx(*ls, cb);
     // set session context entry
     lua_rawgeti(L, LUA_REGISTRYINDEX, tag);
     lua_pushlightuserdata(L, cb);

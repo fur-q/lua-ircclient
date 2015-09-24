@@ -4,7 +4,7 @@ PKGCONF ?= pkg-config
 LUAVER  ?= 5.2
 LUAPC   ?= lua$(LUAVER)
 
-CPPFLAGS := -std=c99 -Wall -Wextra -Wno-unused-parameter -pedantic -fPIC `$(PKGCONF) --cflags $(LUAPC)`
+CPPFLAGS := -std=c99 -pedantic -Wall -Wextra -Wno-unused-parameter -fPIC `$(PKGCONF) --cflags $(LUAPC)`
 LDFLAGS  ?= -shared
 LDADD    ?= -lircclient
 
